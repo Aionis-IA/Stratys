@@ -1,0 +1,31 @@
+# Environnements virtuels
+.venv/
+venv/
+env/
+
+# Variables d'environnement et secrets
+.env
+.env.*
+
+# Cache Python / artefacts
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Base locale
+*.db
+*.sqlite3
+
+# IDE / éditeurs
+.idea/
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
