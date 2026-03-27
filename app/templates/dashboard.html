@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}Diagnostic — Stratys{% endblock %}
+{% block content %}
+<h1 class="text-2xl font-semibold mb-6 text-white">Diagnostic business</h1>
+<form method="post" action="/analyze" class="space-y-4">
+  <div>
+    <label for="situation" class="block text-sm text-white/70 mb-1">Ta situation</label>
+    <textarea
+      id="situation"
+      name="situation"
+      required
+      rows="5"
+      placeholder="Décris qui tu es, ce que tu fais et où tu en es actuellement"
+      class="w-full bg-[#12121a]/90 border border-white/10 rounded px-3 py-2 text-white placeholder:text-white/35 focus:outline-none focus:border-[#7c3aed] focus:ring-1 focus:ring-[#7c3aed]"
+    ></textarea>
+  </div>
+  <div>
+    <label for="revenue" class="block text-sm text-white/70 mb-1">Revenus mensuels</label>
+    <input
+      type="number"
+      id="revenue"
+      name="revenue"
+      required
+      min="0"
+      step="1"
+      placeholder="Ton revenu mensuel exact en euros"
+      class="w-full bg-[#12121a]/90 border border-white/10 rounded px-3 py-2 text-white placeholder:text-white/35 focus:outline-none focus:border-[#7c3aed] focus:ring-1 focus:ring-[#7c3aed]"
+    />
+  </div>
+  <div>
+    <label for="user_offer" class="block text-sm text-white/70 mb-1">Ton offre</label>
+    <textarea
+      id="user_offer"
+      name="user_offer"
+      required
+      rows="3"
+      placeholder="Écris ta promesse ou ton offre en une phrase"
+      class="w-full bg-[#12121a]/90 border border-white/10 rounded px-3 py-2 text-white placeholder:text-white/35 focus:outline-none focus:border-[#7c3aed] focus:ring-1 focus:ring-[#7c3aed]"
+    ></textarea>
+  </div>
+  <div>
+    <label for="prospects_per_week" class="block text-sm text-white/70 mb-1">Combien de personnes tu contactes pour proposer tes services chaque semaine ?</label>
+    <input
+      type="number"
+      id="prospects_per_week"
+      name="prospects_per_week"
+      required
+      min="0"
+      step="1"
+      class="w-full bg-[#12121a]/90 border border-white/10 rounded px-3 py-2 text-white placeholder:text-white/35 focus:outline-none focus:border-[#7c3aed] focus:ring-1 focus:ring-[#7c3aed]"
+    />
+  </div>
+  <div>
+    <label for="closing_rate" class="block text-sm text-white/70 mb-1">Sur 10 personnes à qui tu proposes tes services, combien deviennent clientes ?</label>
+    <div class="flex items-center gap-2">
+      <input
+        type="number"
+        id="closing_rate"
+        name="closing_rate"
+        required
+        min="0"
+        max="100"
+        step="1"
+        class="w-full bg-[#12121a]/90 border border-white/10 rounded px-3 py-2 text-white placeholder:text-white/35 focus:outline-none focus:border-[#7c3aed] focus:ring-1 focus:ring-[#7c3aed]"
+      />
+      <span class="text-white/70 shrink-0 select-none" aria-hidden="true">%</span>
+    </div>
+  </div>
+  <div>
+    <label for="main_blocker" class="block text-sm text-white/70 mb-1">Ton blocage principal</label>
+    <textarea
+      id="main_blocker"
+      name="main_blocker"
+      required
+      rows="5"
+      placeholder="Décris précisément ce qui t'empêche d'avancer"
+      class="w-full bg-[#12121a]/90 border border-white/10 rounded px-3 py-2 text-white placeholder:text-white/35 focus:outline-none focus:border-[#7c3aed] focus:ring-1 focus:ring-[#7c3aed]"
+    ></textarea>
+  </div>
+  <button type="submit" class="bg-[#7c3aed] text-white font-medium px-6 py-2 rounded hover:bg-[#6d28d9] transition focus:outline-none focus:ring-2 focus:ring-[#7c3aed] focus:ring-offset-2 focus:ring-offset-[#0a0a0f]">
+    Voir mon diagnostic
+  </button>
+</form>
+<p class="mt-4 text-white/60 text-sm">
+  <a href="/" class="text-[#7c3aed] hover:text-[#a78bfa] underline underline-offset-2">Retour à l'accueil</a>
+</p>
+{% endblock %}

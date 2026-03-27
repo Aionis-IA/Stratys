@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+{% block title %}Résultat — Stratys{% endblock %}
+{% block content %}
+<h1 class="text-2xl font-semibold mb-6 text-white">Ton diagnostic</h1>
+
+{% if summary %}
+<p class="text-white/90 text-base leading-relaxed mb-8 border-l-2 border-[#7c3aed]/60 pl-4">
+  {{ summary }}
+</p>
+{% endif %}
+
+{% if strength or weakness %}
+<div
+  class="mb-8 rounded-lg border border-white/10 bg-[#12121a]/90 p-5 drop-shadow-[0_0_20px_rgba(124,58,237,0.4)]"
+  style="box-shadow: 0 0 24px rgba(124, 58, 237, 0.25), 0 0 1px rgba(124, 58, 237, 0.5);"
+>
+  {% if strength %}
+  <p class="text-sm leading-relaxed mb-4 last:mb-0">
+    <span class="font-semibold text-[#22c55e]">💪 Force :</span>
+    <span class="text-white/90"> {{ strength }}</span>
+  </p>
+  {% endif %}
+  {% if weakness %}
+  <p class="text-sm leading-relaxed last:mb-0">
+    <span class="font-semibold text-[#f97316]">⚠️ Faiblesse :</span>
+    <span class="text-white/90"> {{ weakness }}</span>
+  </p>
+  {% endif %}
+</div>
+{% endif %}
+
+{# Jauge circulaire : couleur selon le score #}
+{% set s = score|int %}
+{% if s <= 40 %}
+  {% set gauge_color = '#ef4444' %}
+{% elif s <= 70 %}
+  {% set gauge_color = '#f97316' %}
+{% else %}
+  {% set gauge_color = '#22c55e' %}
+{% endif %}
+{% set radius = 54 %}
+{% set circumference = 2 * 3.141592653589793 * radius %}
+{% set dashoffset = circumference * (1 - s / 100.0) %}
+
+<div class="mb-10 flex flex-col items-center">
+  <p class="text-white/60 text-sm mb-4 self-start w-full">Score</p>
+  <div
+    class="relative inline-flex items-center justify-center drop-shadow-[0_0_18px_rgba(124,58,237,0.55)]"
+    style="filter: drop-shadow(0 0 22px rgba(124, 58, 237, 0.45));"
+  >
+    <svg width="220" height="220" viewBox="0 0 220 220" aria-hidden="true" class="block">
+      <defs>
+        <filter id="stratysGaugeGlow" x="-40%" y="-40%" width="180%" height="180%">
+          <feGaussianBlur in="SourceGraphic" stdDeviation="2.5" result="blur" />
+          <feMerge>
+            <feMergeNode in="blur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+      </defs>
+      <!-- Fond disque intérieur sombre -->
+      <circle cx="110" cy="110" r="78" fill="#0a0a0f" stroke="rgba(124,58,237,0.35)" stroke-width="2" />
+      <!-- Anneau de fond -->
+      <circle
+        cx="110" cy="110" r="{{ radius }}"
+        fill="none"
+        stroke="#1f1f28"
+        stroke-width="14"
+      />
+      <!-- Progression -->
+      <circle
+        cx="110" cy="110" r="{{ radius }}"
+        fill="none"
+        stroke="{{ gauge_color }}"
+        stroke-width="14"
+        stroke-linecap="round"
+        stroke-dasharray="{{ circumference }}"
+        stroke-dashoffset="{{ dashoffset }}"
+        transform="rotate(-90 110 110)"
+        filter="url(#stratysGaugeGlow)"
+      />
+    </svg>
+    <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+      <span class="text-5xl font-bold text-white tabular-nums">{{ s }}</span>
+      <span class="text-sm text-white/50 mt-0.5">/ 100</span>
+    </div>
+  </div>
+</div>
+
+{% if issues %}
+<section class="space-y-6">
+  <h2 class="text-lg font-medium text-white">Axes d'action</h2>
+  {% for issue in issues %}
+  <div class="bg-[#12121a]/90 border border-white/10 rounded p-4">
+    <div class="flex flex-wrap items-start gap-2 mb-2">
+      <span class="inline-flex shrink-0 items-center rounded px-2 py-0.5 text-xs font-semibold bg-[#7c3aed] text-white">
+        Priorité {{ loop.index }}
+      </span>
+      <h3 class="font-medium text-white flex-1 min-w-[12rem]">{{ issue.title }}</h3>
+    </div>
+    <p class="text-white/70 text-sm mb-2"><strong class="text-white/90">Impact :</strong> {{ issue.impact }}</p>
+    <div class="text-white/80 text-sm">
+      <strong class="text-[#a78bfa]">Actions :</strong>
+      {% if issue.actions %}
+        <ul class="list-disc list-inside mt-2 space-y-1">
+          {% for a in issue.actions %}
+            <li>{{ a }}</li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="mt-2">{{ issue.action }}</p>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</section>
+{% endif %}
+<p class="mt-8 text-white/60 text-sm">
+  <a href="/dashboard" class="text-[#7c3aed] hover:text-[#a78bfa] underline underline-offset-2">Refaire un diagnostic</a>
+  <span class="text-white/40"> — </span>
+  <a href="/" class="text-[#7c3aed] hover:text-[#a78bfa] underline underline-offset-2">Accueil</a>
+</p>
+<div class="mt-6 flex justify-center">
+  <a
+    href="/dashboard"
+    class="inline-block bg-[#7c3aed] text-white font-medium px-6 py-2 rounded hover:bg-[#6d28d9] transition focus:outline-none focus:ring-2 focus:ring-[#7c3aed] focus:ring-offset-2 focus:ring-offset-[#0a0a0f]"
+  >
+    Refaire le diagnostic
+  </a>
+</div>
+{% endblock %}

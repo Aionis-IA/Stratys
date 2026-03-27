@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Connexion — Stratys{% endblock %}
+{% block content %}
+<h1 class="text-2xl font-semibold mb-6 text-white">Connexion</h1>
+{% if error %}<p class="text-red-400 text-sm mb-4">{{ error }}</p>{% endif %}
+<form method="post" action="/login" class="space-y-4">
+  <div>
+    <label for="email" class="block text-sm text-white/70 mb-1">Email</label>
+    <input type="email" id="email" name="email" required
+           class="w-full bg-[#12121a]/90 border border-white/10 rounded px-3 py-2 text-white placeholder:text-white/35 focus:outline-none focus:border-[#7c3aed] focus:ring-1 focus:ring-[#7c3aed]">
+  </div>
+  <div>
+    <label for="password" class="block text-sm text-white/70 mb-1">Mot de passe</label>
+    <input type="password" id="password" name="password" required
+           class="w-full bg-[#12121a]/90 border border-white/10 rounded px-3 py-2 text-white placeholder:text-white/35 focus:outline-none focus:border-[#7c3aed] focus:ring-1 focus:ring-[#7c3aed]">
+  </div>
+  <button type="submit" class="bg-[#7c3aed] text-white font-medium px-6 py-2 rounded hover:bg-[#6d28d9] transition focus:outline-none focus:ring-2 focus:ring-[#7c3aed] focus:ring-offset-2 focus:ring-offset-[#0a0a0f]">
+    Se connecter
+  </button>
+</form>
+<p class="mt-4 text-white/60 text-sm">
+  Pas encore de compte ? <a href="/register" class="text-[#7c3aed] hover:text-[#a78bfa] underline underline-offset-2">S'inscrire</a>
+</p>
+{% endblock %}

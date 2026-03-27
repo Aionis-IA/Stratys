@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Stratys{% endblock %}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            stratys: {
+              bg: '#0a0a0f',
+              purple1: '#2d1b69',
+              purple2: '#1a0a3e',
+              purple3: '#4a1d96',
+              accent: '#7c3aed',
+            },
+          },
+        },
+      },
+    };
+  </script>
+  <style>
+    .stratys-page-bg {
+      background-color: #0a0a0f;
+    }
+    .stratys-glows {
+      background:
+        radial-gradient(ellipse 85% 55% at 15% 5%, rgba(45, 27, 105, 0.42) 0%, transparent 55%),
+        radial-gradient(ellipse 70% 50% at 95% 25%, rgba(74, 29, 150, 0.28) 0%, transparent 50%),
+        radial-gradient(ellipse 90% 70% at 50% 100%, rgba(26, 10, 62, 0.45) 0%, transparent 55%),
+        radial-gradient(ellipse 50% 40% at 70% 70%, rgba(45, 27, 105, 0.2) 0%, transparent 45%);
+    }
+    /* Logo Stratys — halo violet vif (#a855f7, #c084fc) */
+    .stratys-logo {
+      color: #fafafa;
+      letter-spacing: -0.02em;
+      line-height: 1;
+      text-shadow:
+        0 0 6px #c084fc,
+        0 0 14px #a855f7,
+        0 0 28px rgba(168, 85, 247, 0.85),
+        0 0 48px rgba(192, 132, 252, 0.55),
+        0 0 72px rgba(168, 85, 247, 0.35),
+        0 1px 0 rgba(255, 255, 255, 0.15),
+        0 -1px 12px rgba(192, 132, 252, 0.4),
+        2px 2px 0 rgba(168, 85, 247, 0.25),
+        -2px -2px 20px rgba(192, 132, 252, 0.2);
+    }
+    .stratys-logo:hover {
+      text-shadow:
+        0 0 8px #c084fc,
+        0 0 20px #a855f7,
+        0 0 36px rgba(168, 85, 247, 0.95),
+        0 0 56px rgba(192, 132, 252, 0.65),
+        0 0 80px rgba(168, 85, 247, 0.45),
+        0 1px 0 rgba(255, 255, 255, 0.2),
+        0 -1px 16px rgba(192, 132, 252, 0.5);
+    }
+  </style>
+</head>
+<body class="stratys-page-bg text-white min-h-screen antialiased relative">
+  <div class="fixed inset-0 stratys-glows pointer-events-none z-0" aria-hidden="true"></div>
+  <div class="relative z-10 max-w-2xl mx-auto px-4 py-8">
+    <header class="mb-10 text-center">
+      <a href="/" class="stratys-logo inline-block text-5xl sm:text-6xl font-extrabold no-underline text-white hover:text-white transition">
+        Stratys
+      </a>
+    </header>
+    {% block content %}{% endblock %}
+  </div>
+</body>
+</html>
