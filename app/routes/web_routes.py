@@ -32,8 +32,8 @@ BETA_COOKIE_NAME = "stratys_beta_code"
 def landing(request: Request):
     beta_cookie = request.cookies.get(BETA_COOKIE_NAME, "")
     if BETA_CODE and beta_cookie != BETA_CODE:
-        return templates.TemplateResponse("beta_access.html", {"request": request})
-    return templates.TemplateResponse("landing.html", {"request": request})
+        return templates.TemplateResponse(request=request, name="beta_access.html")
+    return templates.TemplateResponse(request=request, name="landing.html")
 
 
 @router.post("/", response_class=HTMLResponse)
@@ -43,8 +43,9 @@ def beta_access_submit(request: Request, beta_code: str = Form("")):
 
     if beta_code.strip() != BETA_CODE:
         return templates.TemplateResponse(
-            "beta_access.html",
-            {"request": request, "error": "Code invalide. Veuillez réessayer."},
+            request=request,
+            name="beta_access.html",
+            context={"error": "Code invalide. Veuillez réessayer."},
             status_code=401,
         )
 
@@ -60,7 +61,7 @@ def beta_access_submit(request: Request, beta_code: str = Form("")):
 
 @router.get("/register", response_class=HTMLResponse)
 def register_page(request: Request):
-    return templates.TemplateResponse("register.html", {"request": request})
+    return templates.TemplateResponse(request=request, name="register.html")
 
 
 @router.post("/register")
@@ -72,8 +73,9 @@ def register_submit(
 ):
     if db.query(User).filter(User.email == email).first():
         return templates.TemplateResponse(
-            "register.html",
-            {"request": request, "error": "Un compte existe déjà avec cet email."},
+            request=request,
+            name="register.html",
+            context={"error": "Un compte existe déjà avec cet email."},
             status_code=400,
         )
     user = User(email=email, hashed_password=hash_password(password))
@@ -84,7 +86,7 @@ def register_submit(
 
 @router.get("/login", response_class=HTMLResponse)
 def login_page(request: Request):
-    return templates.TemplateResponse("login.html", {"request": request})
+    return templates.TemplateResponse(request=request, name="login.html")
 
 
 @router.post("/login")
@@ -97,8 +99,9 @@ def login_submit(
     user = db.query(User).filter(User.email == email).first()
     if not user or not verify_password(password, user.hashed_password) or not user.is_active:
         return templates.TemplateResponse(
-            "login.html",
-            {"request": request, "error": "Email ou mot de passe incorrect."},
+            request=request,
+            name="login.html",
+            context={"error": "Email ou mot de passe incorrect."},
             status_code=401,
         )
     token = create_access_token(data={"sub": user.email})
@@ -118,7 +121,7 @@ def dashboard(
     request: Request,
     _: Annotated[User, Depends(get_current_user_web)],
 ):
-    return templates.TemplateResponse("dashboard.html", {"request": request})
+    return templates.TemplateResponse(request=request, name="dashboard.html")
 
 
 @router.post("/analyze")
@@ -151,9 +154,9 @@ def result(request: Request):
     if not result_data:
         return RedirectResponse(url="/dashboard", status_code=302)
     return templates.TemplateResponse(
-        "result.html",
-        {
-            "request": request,
+        request=request,
+        name="result.html",
+        context={
             "score": result_data.get("score", 0),
             "issues": result_data.get("issues", []),
             "summary": result_data.get("summary", ""),
