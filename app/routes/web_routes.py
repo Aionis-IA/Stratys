@@ -124,7 +124,14 @@ def dashboard(
     return templates.TemplateResponse(request=request, name="dashboard.html")
 
 
+@router.get("/analyze")
+@router.get("/analyze/")
+def analyze_get_redirect():
+    return RedirectResponse(url="/dashboard", status_code=302)
+
+
 @router.post("/analyze")
+@router.post("/analyze/")
 def analyze_submit(
     request: Request,
     situation: str = Form(...),
