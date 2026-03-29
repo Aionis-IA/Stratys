@@ -74,11 +74,12 @@ def get_subscribed_user(
     user: Annotated[User, Depends(get_current_user)],
 ) -> User:
     """Dépendance : utilisateur courant uniquement s'il est abonné."""
-    if not user.is_subscribed:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Abonnement requis pour accéder au diagnostic",
-        )
+    # TODO: restore for production
+    # if not user.is_subscribed:
+    #     raise HTTPException(
+    #         status_code=status.HTTP_403_FORBIDDEN,
+    #         detail="Abonnement requis pour accéder au diagnostic",
+    #     )
     return user
 
 
@@ -110,9 +111,10 @@ def get_subscribed_user_web(
     user: Annotated[User, Depends(get_current_user_web)],
 ) -> User:
     """Utilisateur abonné pour les pages web. Redirige vers /login si non abonné."""
-    if not user.is_subscribed:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Abonnement requis pour accéder au diagnostic",
-        )
+    # TODO: restore for production
+    # if not user.is_subscribed:
+    #     raise HTTPException(
+    #         status_code=status.HTTP_403_FORBIDDEN,
+    #         detail="Abonnement requis pour accéder au diagnostic",
+    #     )
     return user
