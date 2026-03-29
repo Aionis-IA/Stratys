@@ -1,6 +1,5 @@
 """Routes des pages web (templates Jinja2)."""
 import os
-from pathlib import Path
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Form, Request
@@ -22,8 +21,7 @@ from app.database import get_db
 from app.models import User
 
 router = APIRouter()
-BASE_DIR = Path(__file__).resolve().parent.parent
-templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
+templates = Jinja2Templates(directory="app/templates")
 load_dotenv()
 
 BETA_CODE = os.getenv("BETA_CODE", "").strip()
