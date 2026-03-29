@@ -1,6 +1,6 @@
 """Routes des pages web (templates Jinja2)."""
 import os
-from typing import Annotated
+from typing import Annotated, Optional
 
 from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -137,8 +137,8 @@ def analyze_submit(
     situation: str = Form(...),
     revenue: int = Form(...),
     user_offer: str = Form(...),
-    prospects_per_week: int = Form(...),
-    closing_rate: int = Form(...),
+    prospects_per_week: Optional[str] = Form(None),
+    closing_rate: Optional[str] = Form(None),
     main_blocker: str = Form(...),
     current_user: Annotated[User, Depends(get_subscribed_user_web)] = None,
 ):

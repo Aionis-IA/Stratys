@@ -181,9 +181,31 @@ def _fallback_result(reason: str) -> dict[str, Any]:
     }
 
 
+def _optional_non_negative_int(value: Any) -> int | None:
+    """Entier >= 0 si la valeur est renseignée, sinon None (champ absent ou vide)."""
+    if value is None:
+        return None
+    s = str(value).strip()
+    if not s:
+        return None
+    try:
+        n = int(s)
+    except ValueError:
+        return None
+    return n if n >= 0 else None
+
+
+def _optional_closing_rate(value: Any) -> int | None:
+    """Taux 0–100 si renseigné, sinon None."""
+    n = _optional_non_negative_int(value)
+    if n is None:
+        return None
+    return n if n <= 100 else None
+
+
 def analyze_business(data: dict) -> dict[str, Any]:
     """
-    Envoie les 6 champs à Groq et attend un JSON :
+    Envoie les champs à Groq et attend un JSON :
     {
       "summary": str (2-3 phrases),
       "strength": str (1 force principale),
@@ -191,17 +213,45 @@ def analyze_business(data: dict) -> dict[str, Any]:
       "score": 0-100,
       "issues": [ { "title", "impact", "actions": [str, ...] }, x3 ]
     }
+    Les champs prospection hebdo et taux de closing sont optionnels : s'ils sont absents,
+    ils ne sont pas envoyés au modèle et ne doivent pas apparaître dans le diagnostic.
     """
     situation = str(data.get("situation", "") or "").strip()
     revenue = int(data.get("revenue", 0) or 0)
     user_offer = str(data.get("user_offer", "") or "").strip()
-    prospects_per_week = int(data.get("prospects_per_week", 0) or 0)
-    closing_rate = int(data.get("closing_rate", 0) or 0)
+    prospects_per_week = _optional_non_negative_int(data.get("prospects_per_week"))
+    closing_rate = _optional_closing_rate(data.get("closing_rate"))
     main_blocker = str(data.get("main_blocker", "") or "").strip()
+    has_prospects = prospects_per_week is not None
+    has_closing = closing_rate is not None
 
     api_key = os.getenv("GROQ_API_KEY")
     if not api_key:
         return _fallback_result("Clé API Groq absente (GROQ_API_KEY).")
+
+    metrics_hint = (
+        "Tu peux aussi t’appuyer sur revenus, offre"
+        + (", volume de prospection et taux de closing" if (has_prospects or has_closing) else "")
+        + " pour être spécifique. "
+    )
+    if not has_prospects and not has_closing:
+        metrics_rules = (
+            "Les données ne comportent PAS de volume de prospection hebdomadaire ni de taux de closing : "
+            "n’invente aucune métrique, ne les mentionne nulle part (summary, strength, weakness, issues), "
+            "et n’en déduis rien pour le score — base le score uniquement sur situation, revenus, offre et blocage. "
+        )
+    elif not has_prospects:
+        metrics_rules = (
+            "Les données ne comportent PAS de volume de prospection hebdomadaire : "
+            "ne le mentionne nulle part et n’en déduis rien ; le score s’appuie sur les autres champs fournis. "
+        )
+    elif not has_closing:
+        metrics_rules = (
+            "Les données ne comportent PAS de taux de closing : "
+            "ne le mentionne nulle part et n’en déduis rien ; le score s’appuie sur les autres champs fournis. "
+        )
+    else:
+        metrics_rules = ""
 
     system_prompt = (
         "Tu es un mentor business pour freelances. Tu parles à la personne au TU systématiquement : jamais de vouvoiement, "
@@ -213,7 +263,8 @@ def analyze_business(data: dict) -> dict[str, Any]:
         '  {"title": "...", "impact": "...", "actions": ["...", "..."]},\n'
         '  {"title": "...", "impact": "...", "actions": ["...", "..."]}\n'
         "]}\n"
-        "Champ strength : UNE phrase en français, tutoiement obligatoire. "
+        + metrics_rules
+        + "Champ strength : UNE phrase en français, tutoiement obligatoire. "
         "Ta principale force visible dans ce qu’elle a écrit : positif et encourageant, mais honnête — "
         "appuie-toi sur des faits tirés de ses textes (situation, offre, chiffres). Pas de flatterie creuse. "
         "Champ weakness : UNE phrase en français, tutoiement obligatoire. "
@@ -234,20 +285,29 @@ def analyze_business(data: dict) -> dict[str, Any]:
         "(jamais dans impact — voir règle ci-dessous). "
         "pour prouver que tu t’appuies sur ce qui a été écrit. "
         "Never copy the user's exact words in the impact field. Always reformulate in your own words using 'tu'. Never use 'je' in any field. "
-        "Tu peux aussi t’appuyer sur revenus, offre, prospects et closing pour être spécifique. "
-        "Tout le texte du JSON (hors clés) est en français. "
+        + metrics_hint
+        + "Tout le texte du JSON (hors clés) est en français. "
         "IMPORTANT: Return only valid JSON. No trailing commas. No text outside JSON."
     )
 
+    blocks: list[str] = [
+        f"1) Ta situation (texte exact à citer) :\n{situation}\n\n",
+        f"2) Revenus mensuels (euros) : {revenue}\n\n",
+        f"3) Ton offre (promesse en une phrase) :\n{user_offer}\n\n",
+    ]
+    n = 4
+    if has_prospects:
+        blocks.append(f"{n}) Prospects par semaine : {prospects_per_week}\n\n")
+        n += 1
+    if has_closing:
+        blocks.append(f"{n}) Taux de closing (0-100 %) : {closing_rate}\n\n")
+        n += 1
+    blocks.append(f"{n}) Ton blocage principal (texte exact à citer) :\n{main_blocker}\n\n")
+
     user_payload = (
         "Voici les données saisies (tu t’en sers pour être ultra spécifique) :\n\n"
-        f"1) Ta situation (texte exact à citer) :\n{situation}\n\n"
-        f"2) Revenus mensuels (euros) : {revenue}\n\n"
-        f"3) Ton offre (promesse en une phrase) :\n{user_offer}\n\n"
-        f"4) Prospects par semaine : {prospects_per_week}\n\n"
-        f"5) Taux de closing (0-100 %) : {closing_rate}\n\n"
-        f"6) Ton blocage principal (texte exact à citer) :\n{main_blocker}\n\n"
-        "Calcule un score global 0-100 cohérent avec ces chiffres et ce contexte. "
+        + "".join(blocks)
+        + "Calcule un score global 0-100 cohérent avec ce contexte et les chiffres effectivement fournis ci-dessus. "
         "Rédige summary, strength, weakness, puis 3 issues prioritaires : tutoie partout, sois sans filtre, "
         "et chaque action doit tenir en moins d’une heure aujourd’hui."
     )

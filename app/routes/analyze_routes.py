@@ -1,5 +1,5 @@
 """Route de diagnostic business — réservée aux abonnés."""
-from typing import Annotated
+from typing import Annotated, Optional
 
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field
@@ -16,16 +16,16 @@ class AnalyzeIn(BaseModel):
     situation: str = Field(..., description="Qui tu es, ce que tu fais, où tu en es")
     revenue: int = Field(..., ge=0, description="Revenus mensuels en euros")
     user_offer: str = Field(..., description="Promesse / offre en une phrase")
-    prospects_per_week: int = Field(
-        ...,
+    prospects_per_week: Optional[int] = Field(
+        default=None,
         ge=0,
-        description="Nombre de prospects par semaine",
+        description="Nombre de prospects par semaine (optionnel)",
     )
-    closing_rate: int = Field(
-        ...,
+    closing_rate: Optional[int] = Field(
+        default=None,
         ge=0,
         le=100,
-        description="Taux de closing en % (0-100)",
+        description="Taux de closing en % (0-100) (optionnel)",
     )
     main_blocker: str = Field(
         ...,
