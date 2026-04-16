@@ -1,12 +1,45 @@
 {% extends "base.html" %}
 {% block title %}Résultat — Stratys{% endblock %}
 {% block content %}
+<div class="grid grid-cols-1 lg:grid-cols-[65fr_35fr] gap-x-10 gap-y-8 items-start">
+  <div class="min-w-0 order-1">
 <h1 class="text-2xl font-semibold mb-6 text-white">Ton diagnostic</h1>
 
 {% if summary %}
 <p class="text-white/90 text-base leading-relaxed mb-8 border-l-2 border-[#7c3aed]/60 pl-4">
   {{ summary }}
 </p>
+{% endif %}
+
+{% if analyze_kind == 'entreprise' %}
+<div class="grid gap-4 mb-8">
+  {% if potentiel_croissance %}
+  <div class="rounded-xl border border-emerald-500/45 bg-emerald-950/25 p-5">
+    <p class="text-emerald-400 font-semibold text-sm mb-2">Potentiel de croissance</p>
+    <p class="text-white/90 text-sm leading-relaxed">{{ potentiel_croissance }}</p>
+  </div>
+  {% endif %}
+  {% if risque_principal %}
+  <div class="rounded-xl border border-red-500/45 bg-red-950/25 p-5">
+    <p class="text-red-400 font-semibold text-sm mb-2">Risque principal</p>
+    <p class="text-white/90 text-sm leading-relaxed">{{ risque_principal }}</p>
+  </div>
+  {% endif %}
+</div>
+{% endif %}
+
+{% if analyze_kind == 'particulier' and intention_lancement and etapes_lancement %}
+<section class="mb-8 rounded-xl border-2 border-[#a855f7]/45 bg-[#1a0a2e]/50 p-6 shadow-[0_0_32px_rgba(168,85,247,0.12)]" aria-labelledby="lancement-heading">
+  <h2 id="lancement-heading" class="text-lg font-semibold text-white mb-4">Tu veux te lancer ?</h2>
+  <ol class="list-decimal list-inside space-y-3 text-white/90 text-sm mb-6 leading-relaxed">
+    {% for etape in etapes_lancement %}
+    <li class="marker:text-[#c4b5fd]">{{ etape }}</li>
+    {% endfor %}
+  </ol>
+  <p class="text-white/75 text-sm border-t border-white/10 pt-4 leading-relaxed">
+    Si tu franchis le pas, ton diagnostic devient celui d'un entrepreneur. Reviens sur Stratys avec ton profil Entrepreneur.
+  </p>
+</section>
 {% endif %}
 
 {% if strength or weakness %}
@@ -127,5 +160,12 @@
   >
     Refaire le diagnostic
   </a>
+</div>
+  </div>
+  <div class="min-w-0 order-2 flex justify-center lg:px-4">
+    <div class="w-full max-w-[340px]">
+      {% include "_dashboard_history.html" %}
+    </div>
+  </div>
 </div>
 {% endblock %}

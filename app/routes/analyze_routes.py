@@ -3,9 +3,12 @@ from typing import Annotated, Optional
 
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field
+from sqlalchemy.orm import Session
 
 from app.analyze import analyze_business
 from app.auth import get_subscribed_user
+from app.database import get_db
+from app.history import save_diagnostic_history
 from app.models import User
 
 # Préfixe /api pour éviter le conflit avec POST /analyze (formulaire HTML dans web_routes).
@@ -41,6 +44,7 @@ class AnalyzeIn(BaseModel):
 def analyze(
     data: AnalyzeIn,
     current_user: Annotated[User, Depends(get_subscribed_user)],
+    db: Annotated[Session, Depends(get_db)],
 ):
     """Diagnostic : score + issues (titre, impact, actions)."""
     payload = {
@@ -51,4 +55,11 @@ def analyze(
         "closing_rate": data.closing_rate,
         "main_blocker": data.main_blocker.strip(),
     }
-    return analyze_business(payload)
+    result = analyze_business(payload)
+    _ = save_diagnostic_history(
+        db,
+        current_user.id,
+        getattr(current_user, "user_type", None) or "entreprise",
+        result,
+    )
+    return result

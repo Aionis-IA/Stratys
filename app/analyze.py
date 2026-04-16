@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import copy
+import hashlib
 import json
 import os
 import re
@@ -166,6 +167,10 @@ def _fallback_result(reason: str) -> dict[str, Any]:
         ),
         "strength": "On n’a pas pu analyser tes points forts tant que le diagnostic ne fonctionne pas.",
         "weakness": "On n’a pas pu analyser tes points faibles tant que le diagnostic ne fonctionne pas.",
+        "potentiel_croissance": "",
+        "risque_principal": "",
+        "intention_lancement": False,
+        "etapes_lancement": None,
         "issues": _normalize_issues(
             [
                 {
@@ -254,39 +259,37 @@ def analyze_business(data: dict) -> dict[str, Any]:
         metrics_rules = ""
 
     system_prompt = (
-        "Tu es un mentor business pour freelances. Tu parles à la personne au TU systématiquement : jamais de vouvoiement, "
-        "jamais de « vous », même dans title, impact et actions. "
+        "Tu es un conseiller business orienté P&L et croissance pour freelances / petites structures qui vendent une offre. "
+        "Ce n’est PAS un bilan de carrière salarié : tu parles acquisition, offre, prix, pipeline, risque cash, traction. "
+        "Tu parles à la personne au TU partout : jamais de vouvoiement, jamais de « vous », même dans title, impact et actions. "
         "Tu réponds UNIQUEMENT avec un objet JSON valide UTF-8, sans texte avant ou après, sans markdown. "
         "Le JSON doit avoir exactement cette structure :\n"
-        '{"summary": "<string>", "strength": "<string>", "weakness": "<string>", "score": <entier 0 à 100>, "issues": [\n'
+        '{"summary": "<string>", "strength": "<string>", "weakness": "<string>", '
+        '"potentiel_croissance": "<string>", "risque_principal": "<string>", '
+        '"score": <entier 0 à 100>, "issues": [\n'
         '  {"title": "...", "impact": "...", "actions": ["...", "..."]},\n'
         '  {"title": "...", "impact": "...", "actions": ["...", "..."]},\n'
         '  {"title": "...", "impact": "...", "actions": ["...", "..."]}\n'
         "]}\n"
         + metrics_rules
-        + "Champ strength : UNE phrase en français, tutoiement obligatoire. "
-        "Ta principale force visible dans ce qu’elle a écrit : positif et encourageant, mais honnête — "
-        "appuie-toi sur des faits tirés de ses textes (situation, offre, chiffres). Pas de flatterie creuse. "
-        "Champ weakness : UNE phrase en français, tutoiement obligatoire. "
-        "Sa principale faiblesse actuelle : brutal et direct, sans langage corporate. "
-        "Personnalisé à partir de ce qu’elle a décrit (situation, blocage, métriques). "
-        "Champ summary : 2 à 3 phrases en français, tutoiement obligatoire. "
-        "Résumé brutal et direct de la situation réelle de la personne et de ce qui la bloque vraiment, "
-        "en t’appuyant sur ce qu’elle a écrit (situation + blocage + chiffres si utiles). Pas de langage corporate. "
-        "Règles de fond : exactement 3 objets dans issues. Chaque actions contient AU MINIMUM 2 chaînes. "
-        "Ton brutal et direct : tu dis la vérité comme un mentor qui ne te ménage pas. "
-        "Zéro langage corporate, zéro adoucissement, zéro formules creuses du type « il serait bon de », "
-        "« pourrait être intéressant », « synergies », « optimiser », « valoriser » sans fait concret. "
-        "Sois précis et actionnable : pas de conseils génériques qui s’appliquent à tout le monde. "
-        "Chaque action doit être faisable AUJOURD’HUI, en MOINS D’UNE HEURE, avec un verbe d’action et un résultat vérifiable "
-        "(ex. message envoyé, liste écrite, chiffre noté, appel passé). "
-        "Dans CHAQUE issue, tu DOIS reprendre MOT POUR MOT au moins un extrait court (quelques mots) tiré du champ « situation » "
-        "ET au moins un extrait court tiré du champ « blocage principal » dans le title ou dans une des actions uniquement "
-        "(jamais dans impact — voir règle ci-dessous). "
-        "pour prouver que tu t’appuies sur ce qui a été écrit. "
-        "Never copy the user's exact words in the impact field. Always reformulate in your own words using 'tu'. Never use 'je' in any field. "
+        + "Champ potentiel_croissance : 2 à 4 phrases en français — estimation brutalement honnête : "
+        "est-ce que ce business a une vraie marge de croissance compte tenu des données (revenus, offre, prospection, closing) ? "
+        "Pas de langue de bois : dis si c’est du plafond de verre, du marché saturé, ou au contraire du levier réel. "
+        "Champ risque_principal : 1 à 2 phrases en français — le risque business le plus dangereux MAINTENANT "
+        "(trésorerie, dépendance à un client, offre floue, pas de prospection, etc.), tiré des faits fournis. "
+        "Champ strength : UNE phrase — force business concrète (offre, réputation, délivrabilité…), pas psychologie de bureau. "
+        "Champ weakness : UNE phrase — faiblesse qui fait mal au CA ou à la croissance. "
+        "Champ summary : 2 à 3 phrases — synthèse sans filtre de la santé économique de l’activité et du vrai goulot. "
+        "Règles : exactement 3 issues ; chaque actions contient AU MINIMUM 2 chaînes ; actions business (offre, prix, prospection, closing, suivi). "
+        "Brutal et direct : pas de coaching « bien-être », pas de reconversion salariée — reste sur l’argent, les clients et l’exécution. "
+        "Zéro langage corporate creux. Chaque action faisable AUJOURD’HUI en moins d’une heure avec résultat vérifiable. "
+        "Dans CHAQUE issue, reprends au moins un court extrait du champ « situation » et du « blocage principal » "
+        "dans le title ou une action (jamais dans impact), mot pour mot pour prouver que tu t’appuies sur les textes. "
+        "Never copy the user's exact words in the impact field. Reformulate with 'tu'. Never use 'je' in any field. "
         + metrics_hint
         + "Tout le texte du JSON (hors clés) est en français. "
+        "Ne jamais copier les mots exacts de l'utilisateur entre guillemets dans les titres ou impacts. "
+        "Toujours reformuler avec tes propres mots. "
         "IMPORTANT: Return only valid JSON. No trailing commas. No text outside JSON."
     )
 
@@ -305,11 +308,19 @@ def analyze_business(data: dict) -> dict[str, Any]:
     blocks.append(f"{n}) Ton blocage principal (texte exact à citer) :\n{main_blocker}\n\n")
 
     user_payload = (
-        "Voici les données saisies (tu t’en sers pour être ultra spécifique) :\n\n"
+        "Voici les données business saisies (tu t’en sers pour juger traction, risque et levier) :\n\n"
         + "".join(blocks)
-        + "Calcule un score global 0-100 cohérent avec ce contexte et les chiffres effectivement fournis ci-dessus. "
-        "Rédige summary, strength, weakness, puis 3 issues prioritaires : tutoie partout, sois sans filtre, "
-        "et chaque action doit tenir en moins d’une heure aujourd’hui."
+        + "Calcule un score global 0-100 cohérent avec ce contexte. "
+        "Rédige summary, strength, weakness, potentiel_croissance, risque_principal, puis 3 issues prioritaires "
+        "100 % orientées croissance et rentabilité : tutoie partout, sans filtre, chaque action en moins d’une heure."
+    )
+    _payload_utf8 = user_payload.encode("utf-8")
+    print(
+        "[Stratys DEBUG] analyze_business Groq user message: sha256="
+        + hashlib.sha256(_payload_utf8).hexdigest()
+        + " len="
+        + str(len(_payload_utf8)),
+        flush=True,
     )
 
     try:
@@ -346,12 +357,166 @@ def analyze_business(data: dict) -> dict[str, Any]:
             weakness = (
                 "Faiblesse non renvoyée par le modèle : précise davantage ton blocage pour qu’on puisse te challenger directement."
             )
+        potentiel_croissance = str(parsed.get("potentiel_croissance", "") or "").strip()
+        if not potentiel_croissance:
+            potentiel_croissance = (
+                "Potentiel non renvoyé par le modèle : précise tes chiffres et ton marché au prochain diagnostic."
+            )
+        risque_principal = str(parsed.get("risque_principal", "") or "").strip()
+        if not risque_principal:
+            risque_principal = (
+                "Risque principal non isolé par le modèle : détaille ta trésorerie et ta dépendance clients."
+            )
         return {
             "score": score,
             "issues": issues,
             "summary": summary,
             "strength": strength,
             "weakness": weakness,
+            "potentiel_croissance": potentiel_croissance,
+            "risque_principal": risque_principal,
+            "intention_lancement": False,
+            "etapes_lancement": None,
+        }
+    except Exception as exc:
+        return _fallback_result(f"Erreur Groq ou JSON invalide : {exc!s}")
+
+
+def _clamp_int(value: Any, lo: int, hi: int) -> int:
+    try:
+        n = int(value)
+    except (TypeError, ValueError):
+        n = lo
+    return max(lo, min(hi, n))
+
+
+def analyze_business_particulier(data: dict) -> dict[str, Any]:
+    """
+    Diagnostic salarié / carrière : même format JSON que analyze_business.
+    Détecte une intention de création d’activité et adapte les conseils ; sinon focus carrière employé.
+    """
+    situation = str(data.get("situation", "") or "").strip()
+    net_salary = int(data.get("net_salary", 0) or 0)
+    ambition = str(data.get("ambition", "") or "").strip()
+    job_satisfaction = _clamp_int(data.get("job_satisfaction", 5), 0, 10)
+    main_blocker = str(data.get("main_blocker", "") or "").strip()
+
+    api_key = os.getenv("GROQ_API_KEY")
+    if not api_key:
+        return _fallback_result("Clé API Groq absente (GROQ_API_KEY).")
+
+    system_prompt = (
+        "Tu es un mentor carrière brutal et direct pour salariés et particuliers en France. "
+        "Tu parles à la personne au TU systématiquement : jamais de vouvoiement, jamais de « vous », "
+        "même dans title, impact et actions. "
+        "Tu réponds UNIQUEMENT avec un objet JSON valide UTF-8, sans texte avant ou après, sans markdown. "
+        "Le JSON doit avoir exactement cette structure :\n"
+        '{"summary": "<string>", "strength": "<string>", "weakness": "<string>", "score": <entier 0 à 100>, '
+        '"intention_lancement": <true ou false>, "etapes_lancement": <null OU tableau de 3 chaînes>, "issues": [\n'
+        '  {"title": "...", "impact": "...", "actions": ["...", "..."]},\n'
+        '  {"title": "...", "impact": "...", "actions": ["...", "..."]},\n'
+        '  {"title": "...", "impact": "...", "actions": ["...", "..."]}\n'
+        "]}\n"
+        "TRANSITION / LANCEMENT — règle stricte : mets intention_lancement à true uniquement si les textes montrent clairement "
+        "une envie de travailler en indépendant, devenir freelance ou entrepreneur, créer une activité, monter une boîte, "
+        "quitter ou quitterait son poste pour se lancer, ou tout signal équivalent (même implicite mais crédible). "
+        "Si intention_lancement est true : etapes_lancement DOIT être un tableau de EXACTEMENT 3 chaînes, "
+        "chacune = une première étape concrète et réaliste pour commencer comme entrepreneur (pas du bullshit). "
+        "Si intention_lancement est false : etapes_lancement DOIT être null (pas de tableau vide). "
+        "Ne mets jamais intention_lancement à true sur une simple frustration de bureau sans projet de sortie — il faut un signal de bascule. "
+        "Chaque issue a EXACTEMENT 2 actions (exactement 2 chaînes dans actions), jamais 1, jamais 3 ou plus. "
+        "Ne recopie jamais les formulations exactes de l’utilisateur, notamment les enchaînements du type « car j’ai peur… » "
+        "ou les longues excuses : reformule toujours avec tes mots, en restant fidèle au fond. "
+        "Dans le summary (et partout ailleurs) : tutoiement strict ; n’emploie jamais « à mon compte » ni aucune tournure qui "
+        "mélange les personnes (je / tu) de façon incorrecte : parle-lui avec « tu » de façon cohérente. "
+        "Contexte : la personne est surtout salariée ; ton rôle n’est pas celui d’un coach business P&L comme pour une entreprise. "
+        "Si intention_lancement est false : concentre-toi sur la carrière employé (évolution, entretiens, compétences, "
+        "politique interne, reconversion, négociation) avec salaire, satisfaction 0-10 et blocage. "
+        "Si intention_lancement est true : garde aussi des issues utiles sur la transition, sans douceur inutile. "
+        "Champ strength : UNE phrase en français — une force réelle tirée de ce qu’elle a écrit. "
+        "Champ weakness : UNE phrase en français — le vrai point faible actuel, sans ménager. "
+        "Champ summary : 2 à 3 phrases en français — résumé sans filtre de sa situation pro et de ce qui la bloque. "
+        "Score 0-100 : cohérent avec satisfaction au travail, ambition, blocage et situation (salaire en contexte, pas en jugement moral). "
+        "Exactement 3 issues ; chaque action faisable en moins d’une heure aujourd’hui. "
+        "Never copy the user's exact words in the impact field. Reformulate with 'tu'. Never use 'je' in any field. "
+        "Tout le texte du JSON (hors clés) est en français. "
+        "Ne jamais copier les mots exacts de l'utilisateur entre guillemets dans les titres ou impacts. "
+        "Toujours reformuler avec tes propres mots. "
+        "IMPORTANT: Return only valid JSON. No trailing commas. No text outside JSON."
+    )
+
+    user_payload = (
+        "Voici les données saisies :\n\n"
+        f"1) Ta situation (poste, entreprise, carrière) :\n{situation}\n\n"
+        f"2) Salaire mensuel net (euros) : {net_salary}\n\n"
+        f"3) Ton ambition sur 12 mois :\n{ambition}\n\n"
+        f"4) Satisfaction au travail (0 = pas du tout, 10 = très satisfait) : {job_satisfaction}\n\n"
+        f"5) Ton blocage principal :\n{main_blocker}\n\n"
+        "Détecte une intention de lancer une activité / devenir indépendant·e / quitter le salariat pour entreprendre. "
+        "Remplis intention_lancement et etapes_lancement selon les règles. "
+        "Rédige summary, strength, weakness, score, puis 3 issues avec recommandations adaptées (carrière et/ou transition)."
+    )
+
+    try:
+        from groq import Groq
+
+        client = Groq(api_key=api_key)
+        completion = client.chat.completions.create(
+            model=GROQ_MODEL,
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_payload},
+            ],
+            temperature=0.35,
+            max_tokens=4096,
+        )
+        raw_text = (completion.choices[0].message.content or "").strip()
+        parsed = extract_json_from_groq_response(raw_text)
+        score = int(parsed.get("score", 0))
+        score = max(0, min(100, score))
+        issues = _normalize_issues(parsed.get("issues"))
+        summary = str(parsed.get("summary", "") or "").strip()
+        if not summary:
+            summary = (
+                "Résumé absent de la réponse : complète mieux ta situation et ton blocage au prochain diagnostic."
+            )
+        strength = str(parsed.get("strength", "") or "").strip()
+        if not strength:
+            strength = (
+                "Force non renvoyée par le modèle : précise davantage ce qui fonctionne déjà pour toi au travail."
+            )
+        weakness = str(parsed.get("weakness", "") or "").strip()
+        if not weakness:
+            weakness = (
+                "Faiblesse non renvoyée : détaille ton blocage pour un retour plus tranché."
+            )
+        raw_intention = parsed.get("intention_lancement")
+        intention_lancement = raw_intention is True or (
+            isinstance(raw_intention, str) and raw_intention.strip().lower() in ("true", "1", "oui")
+        )
+        etapes_raw = parsed.get("etapes_lancement")
+        etapes_lancement: list[str] | None = None
+        if intention_lancement:
+            if isinstance(etapes_raw, list) and len(etapes_raw) > 0:
+                etapes_lancement = [str(x).strip() for x in etapes_raw[:3] if str(x).strip()]
+                while len(etapes_lancement) < 3:
+                    etapes_lancement.append(
+                        "Affine cette étape avec une action vérifiable d’ici demain (30 min max)."
+                    )
+            else:
+                intention_lancement = False
+                etapes_lancement = None
+
+        return {
+            "score": score,
+            "issues": issues,
+            "summary": summary,
+            "strength": strength,
+            "weakness": weakness,
+            "intention_lancement": intention_lancement,
+            "etapes_lancement": etapes_lancement,
+            "potentiel_croissance": "",
+            "risque_principal": "",
         }
     except Exception as exc:
         return _fallback_result(f"Erreur Groq ou JSON invalide : {exc!s}")
