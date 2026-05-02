@@ -13,7 +13,7 @@ from sqlalchemy import inspect, text
 
 from app.database import Base, engine
 from app.models import DiagnosticHistory, User  # noqa: F401 — tables pour Base
-from app.routes import admin_routes, analyze_routes, auth_routes, web_routes
+from app.routes import admin_routes, analyze_routes, auth_routes, dev_routes, web_routes
 
 load_dotenv()
 
@@ -51,9 +51,28 @@ def _ensure_user_type_column() -> None:
     with engine.begin() as conn:
         conn.execute(
             text(
-                "ALTER TABLE users ADD COLUMN user_type VARCHAR(32) NOT NULL DEFAULT 'entreprise'"
+                "ALTER TABLE users ADD COLUMN user_type VARCHAR(32) NOT NULL DEFAULT 'standard'"
             )
         )
+
+
+def _normalize_user_type_values() -> None:
+    """Normalise les anciennes valeurs user_type ('particulier' -> 'standard')."""
+    insp = inspect(engine)
+    table_names = set(insp.get_table_names())
+    with engine.begin() as conn:
+        if "users" in table_names:
+            conn.execute(
+                text(
+                    "UPDATE users SET user_type='standard' WHERE lower(coalesce(user_type,''))='particulier'"
+                )
+            )
+        if "diagnostic_history" in table_names:
+            conn.execute(
+                text(
+                    "UPDATE diagnostic_history SET user_type='standard' WHERE lower(coalesce(user_type,''))='particulier'"
+                )
+            )
 
 
 def _ensure_diagnostic_history_followup_columns() -> None:
@@ -76,6 +95,7 @@ async def lifespan(app: FastAPI):
     """Au démarrage : création des tables SQLite."""
     Base.metadata.create_all(bind=engine)
     _ensure_user_type_column()
+    _normalize_user_type_values()
     _ensure_company_columns()
     _ensure_diagnostic_history_followup_columns()
     yield
@@ -98,7 +118,10 @@ async def beta_access_guard(request: Request, call_next):
     if not BETA_CODE:
         return await call_next(request)
 
-    if request.url.path == "/" or request.url.path == "/admin/reset-user":
+    if request.url.path == "/" or request.url.path in (
+        "/admin/reset-user",
+        "/dev/reset-users",
+    ):
         return await call_next(request)
 
     beta_cookie = request.cookies.get(BETA_COOKIE_NAME, "")
@@ -112,7 +135,7 @@ async def beta_access_guard(request: Request, call_next):
 async def forbidden_page(request: Request, exc):
     """Affiche une page simple pour les 403 (ex. abonnement requis)."""
     path = request.url.path.rstrip("/") or "/"
-    if path in ("/analyze", "/analyze/particulier") or "diagnostic" in (
+    if path in ("/analyze", "/analyze/standard", "/analyze/premium") or "diagnostic" in (
         getattr(exc, "detail", "") or ""
     ):
         return HTMLResponse(
@@ -130,3 +153,4 @@ app.include_router(web_routes.router)
 app.include_router(auth_routes.router)
 app.include_router(analyze_routes.router)
 app.include_router(admin_routes.router)
+app.include_router(dev_routes.router)

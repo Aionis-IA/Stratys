@@ -1,0 +1,227 @@
+{% extends "base.html" %}
+{% block title %}Entreprise Premium — Stratys{% endblock %}
+{% block content %}
+<div class="grid grid-cols-1 lg:grid-cols-[65fr_35fr] gap-x-10 gap-y-8 items-start">
+  <div class="min-w-0 order-1">
+    <h1 class="text-2xl font-semibold mb-1 text-white">
+      Bonjour{% if company_name %}, <span class="text-amber-200/95">{{ company_name }}</span>{% endif %}
+    </h1>
+    <p class="text-white/55 text-sm mb-1">Entreprise Premium</p>
+    <div class="flex flex-wrap items-center gap-2 mb-5">
+      <span class="inline-flex items-center rounded-md border border-amber-500/50 bg-amber-500/10 px-2.5 py-0.5 text-xs font-semibold text-amber-200 tracking-wide">PREMIUM</span>
+      <span class="text-white/50 text-xs">Analyse 5 axes · angles morts · sans filtre</span>
+    </div>
+
+    <form method="post" action="/analyze/premium" class="space-y-4" id="form-premium">
+      <div>
+        <label for="situation" class="block text-sm text-white/70 mb-1">Ta situation</label>
+        <textarea
+          id="situation"
+          name="situation"
+          required
+          rows="5"
+          placeholder="Décris ton entreprise, ton secteur, ton équipe et où tu en es"
+          class="w-full bg-[#12121a]/90 border border-amber-500/20 rounded px-3 py-2 text-white placeholder:text-white/35 focus:outline-none focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/40"
+        ></textarea>
+      </div>
+      <div>
+        <label for="revenue" class="block text-sm text-white/70 mb-1">Revenus mensuels</label>
+        <input
+          type="number"
+          id="revenue"
+          name="revenue"
+          required
+          min="0"
+          step="1"
+          placeholder="€ / mois"
+          class="w-full bg-[#12121a]/90 border border-amber-500/20 rounded px-3 py-2 text-white placeholder:text-white/35 focus:outline-none focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/40"
+        />
+      </div>
+      <div>
+        <label for="user_offer" class="block text-sm text-white/70 mb-1">Ton offre principale</label>
+        <textarea
+          id="user_offer"
+          name="user_offer"
+          required
+          rows="4"
+          placeholder="Décris précisément ce que tu vends et à qui"
+          class="w-full bg-[#12121a]/90 border border-amber-500/20 rounded px-3 py-2 text-white placeholder:text-white/35 focus:outline-none focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/40"
+        ></textarea>
+      </div>
+      <div>
+        <label for="top_challenges" class="block text-sm text-white/70 mb-1">Tes 3 plus grands défis actuels</label>
+        <textarea
+          id="top_challenges"
+          name="top_challenges"
+          required
+          rows="4"
+          placeholder="Décris en détail les 3 problèmes principaux que tu rencontres"
+          class="w-full bg-[#12121a]/90 border border-amber-500/20 rounded px-3 py-2 text-white placeholder:text-white/35 focus:outline-none focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/40"
+        ></textarea>
+      </div>
+      <div>
+        <label for="resources" class="block text-sm text-white/70 mb-1">Tes ressources disponibles</label>
+        <textarea
+          id="resources"
+          name="resources"
+          required
+          rows="3"
+          placeholder="Équipe, budget, temps, compétences disponibles"
+          class="w-full bg-[#12121a]/90 border border-amber-500/20 rounded px-3 py-2 text-white placeholder:text-white/35 focus:outline-none focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/40"
+        ></textarea>
+      </div>
+      <div>
+        <label for="goals_12m" class="block text-sm text-white/70 mb-1">Tes objectifs à 12 mois</label>
+        <textarea
+          id="goals_12m"
+          name="goals_12m"
+          required
+          rows="3"
+          placeholder="Où veux-tu être dans 12 mois précisément ?"
+          class="w-full bg-[#12121a]/90 border border-amber-500/20 rounded px-3 py-2 text-white placeholder:text-white/35 focus:outline-none focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/40"
+        ></textarea>
+      </div>
+
+      <div class="rounded-xl border border-amber-500/30 bg-gradient-to-b from-amber-950/25 to-[#0f0f18] p-5 space-y-3">
+        <p class="text-sm font-semibold text-amber-100/95">Options modules (prix indicatif — Stripe plus tard)</p>
+        <p class="text-white/50 text-xs leading-relaxed">Active une ou plusieurs cartes. Le total se met à jour. Les options choisies enrichissent le diagnostic et le résultat.</p>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3" id="premium-option-cards">
+          <div
+            class="premium-opt-card relative rounded-xl border-2 text-left p-4 cursor-pointer transition focus:outline-none focus:ring-2 focus:ring-amber-500/50 border-white/10 bg-[#12121a]/90 hover:border-amber-500/30"
+            data-key="clarte"
+            data-price="30"
+            role="button"
+            tabindex="0"
+            aria-pressed="false"
+          >
+            <p class="text-amber-200 font-semibold text-sm mb-1">Clarté &amp; Angles morts</p>
+            <p class="text-white/50 text-xs leading-snug">Veux vs fais, + 3 angles morts (Groq)</p>
+            <span class="absolute top-2 right-2 text-amber-400/90 text-xs font-mono">+30€</span>
+          </div>
+          <div
+            class="premium-opt-card relative rounded-xl border-2 text-left p-4 cursor-pointer transition focus:outline-none focus:ring-2 focus:ring-amber-500/50 border-white/10 bg-[#12121a]/90 hover:border-amber-500/30"
+            data-key="arch"
+            data-price="40"
+            role="button"
+            tabindex="0"
+            aria-pressed="false"
+          >
+            <p class="text-amber-200 font-semibold text-sm mb-1">Architecture système</p>
+            <p class="text-white/50 text-xs leading-snug">Restructuration org, processus, ordre</p>
+            <span class="absolute top-2 right-2 text-amber-400/90 text-xs font-mono">+40€</span>
+          </div>
+          <div
+            class="premium-opt-card relative rounded-xl border-2 text-left p-4 cursor-pointer transition focus:outline-none focus:ring-2 focus:ring-amber-500/50 border-white/10 bg-[#12121a]/90 hover:border-amber-500/30"
+            data-key="pivot"
+            data-price="50"
+            role="button"
+            tabindex="0"
+            aria-pressed="false"
+          >
+            <p class="text-amber-200 font-semibold text-sm mb-1">Pivot stratégique</p>
+            <p class="text-white/50 text-xs leading-snug">Quoi lâcher, où aller, risques</p>
+            <span class="absolute top-2 right-2 text-amber-400/90 text-xs font-mono">+50€</span>
+          </div>
+          <div
+            class="premium-opt-card relative rounded-xl border-2 text-left p-4 cursor-pointer transition focus:outline-none focus:ring-2 focus:ring-amber-500/50 border-white/10 bg-[#12121a]/90 hover:border-amber-500/30"
+            data-key="roadmap"
+            data-price="60"
+            role="button"
+            tabindex="0"
+            aria-pressed="false"
+          >
+            <p class="text-amber-200 font-semibold text-sm mb-1">Roadmap complète</p>
+            <p class="text-white/50 text-xs leading-snug">12 mois, jalons, métriques</p>
+            <span class="absolute top-2 right-2 text-amber-400/90 text-xs font-mono">+60€</span>
+          </div>
+        </div>
+        <input type="hidden" name="opt_clarte" id="h-opt_clarte" value="0" />
+        <input type="hidden" name="opt_arch" id="h-opt_arch" value="0" />
+        <input type="hidden" name="opt_pivot" id="h-opt_pivot" value="0" />
+        <input type="hidden" name="opt_roadmap" id="h-opt_roadmap" value="0" />
+        <input type="hidden" name="option3" id="h-option3" value="0" aria-hidden="true" />
+        <input type="hidden" name="option4" id="h-option4" value="0" aria-hidden="true" />
+        <div class="pt-2 border-t border-amber-500/20 flex flex-wrap items-baseline justify-between gap-2">
+          <span class="text-white/60 text-sm">Base Premium</span>
+          <span class="text-white/80 text-sm">90€<span class="text-white/45">/mois</span></span>
+        </div>
+        <div class="flex flex-wrap items-baseline justify-between gap-2 text-lg">
+          <span class="text-amber-200 font-semibold">Total estimé</span>
+          <span id="premium-total" class="text-2xl font-bold text-white tabular-nums">90€<span class="text-base font-medium text-white/50">/mois</span></span>
+        </div>
+      </div>
+
+      <button type="submit" class="bg-gradient-to-r from-amber-600 to-amber-500 text-white font-semibold px-6 py-2.5 rounded-lg hover:from-amber-500 hover:to-amber-400 transition shadow-[0_0_20px_rgba(245,158,11,0.25)] focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 focus:ring-offset-[#0a0a0f]">
+        Lancer le diagnostic premium
+      </button>
+    </form>
+
+    <p class="mt-6 text-white/60 text-sm">
+      <a href="/" class="text-amber-400/90 hover:text-amber-300 underline underline-offset-2">Retour à l'accueil</a>
+    </p>
+  </div>
+  <div class="min-w-0 order-2 flex justify-center lg:px-4">
+    <div class="w-full max-w-[340px]">
+      {% include "_dashboard_history.html" %}
+    </div>
+  </div>
+</div>
+<script>
+(function () {
+  var base = 90;
+  var form = document.getElementById("form-premium");
+  if (!form) return;
+  var out = document.getElementById("premium-total");
+  var idMap = { clarte: "h-opt_clarte", arch: "h-opt_arch", pivot: "h-opt_pivot", roadmap: "h-opt_roadmap" };
+  var baseCard =
+    "premium-opt-card relative rounded-xl border-2 text-left p-4 cursor-pointer transition " +
+    "focus:outline-none focus:ring-2 focus:ring-amber-500/50";
+  var offCls = " border-white/10 bg-[#12121a]/90 hover:border-amber-500/30";
+  var onCls =
+    " !border-amber-400/70 bg-gradient-to-br from-amber-500/20 to-[#120f16] " +
+    "shadow-[0_0_24px_rgba(245,158,11,0.2)] ring-1 ring-amber-500/30";
+  function getHiddenFor(card) {
+    return document.getElementById(idMap[card.getAttribute("data-key") || ""] || "");
+  }
+  function setCard(el, on) {
+    el.setAttribute("aria-pressed", on ? "true" : "false");
+    el.className = baseCard + (on ? onCls : offCls);
+  }
+  function recalc() {
+    var add = 0;
+    form.querySelectorAll(".premium-opt-card").forEach(function (card) {
+      var h = getHiddenFor(card);
+      if (h && h.value === "1") add += parseInt(card.getAttribute("data-price") || "0", 10);
+    });
+    out.innerHTML = (base + add) + "€<span class=\"text-base font-medium text-white/50\">/mois</span>";
+  }
+  function syncOption34Mirrors() {
+    var p = document.getElementById("h-opt_pivot");
+    var r = document.getElementById("h-opt_roadmap");
+    var o3 = document.getElementById("h-option3");
+    var o4 = document.getElementById("h-option4");
+    if (p && o3) o3.value = p.value;
+    if (r && o4) o4.value = r.value;
+  }
+  function toggleCard(card) {
+    var h = getHiddenFor(card);
+    if (!h) return;
+    var on = h.value !== "1";
+    h.value = on ? "1" : "0";
+    syncOption34Mirrors();
+    setCard(card, on);
+    recalc();
+  }
+  syncOption34Mirrors();
+  form.querySelectorAll(".premium-opt-card").forEach(function (card) {
+    var h = getHiddenFor(card);
+    setCard(card, h && h.value === "1");
+    card.addEventListener("click", function () { toggleCard(card); });
+    card.addEventListener("keydown", function (e) {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleCard(card); }
+    });
+  });
+  recalc();
+})();
+</script>
+{% endblock %}

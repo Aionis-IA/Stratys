@@ -12,49 +12,69 @@
 
 <section class="pb-16 pt-4 border-t border-white/10" aria-labelledby="profil-heading">
   <h2 id="profil-heading" class="text-xl font-semibold text-white text-center mb-2">
-    Choisis ton profil
+    Choisis ton offre
   </h2>
-  <p class="text-white/60 text-sm text-center mb-8 max-w-md mx-auto">
+  <p class="text-white/60 text-sm text-center mb-10 max-w-2xl mx-auto">
     Sélectionne l’offre qui correspond à ta situation pour commencer ton diagnostic.
   </p>
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-5 items-stretch max-w-6xl mx-auto">
+    {# — Standard — #}
     <article class="flex flex-col rounded-2xl border-2 border-[#7c3aed] bg-[#12121a]/80 backdrop-blur-sm p-6 sm:p-7 shadow-[0_0_40px_rgba(124,58,237,0.12)]">
-      <div class="flex items-start gap-4 mb-4">
+      <div class="flex items-start gap-4 mb-3">
         <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#7c3aed]/15 text-2xl" aria-hidden="true">👤</span>
         <div class="text-left min-w-0">
-          <h3 class="text-lg font-semibold text-white leading-snug">
-            Je suis employé ou particulier
-          </h3>
+          <h3 class="text-lg font-semibold text-white leading-snug">Standard</h3>
+          <p class="text-[#c4b5fd]/90 text-sm mt-0.5">Particulier &amp; Employé</p>
         </div>
       </div>
-      <p class="text-white/75 text-sm leading-relaxed flex-grow mb-6">
-        Tu travailles pour une entreprise et tu veux évoluer, progresser ou te lancer à ton compte
+      <p class="text-white/75 text-sm leading-relaxed flex-grow mb-5">
+        Tu travailles pour quelqu'un ou tu veux évoluer. Obtiens un diagnostic clair sur ta situation.
       </p>
-      <p class="text-[#c4b5fd] font-medium text-sm mb-6">
-        9€ par diagnostic
-      </p>
-      <a href="/register?type=particulier" class="mt-auto inline-flex justify-center items-center text-center bg-[#7c3aed] text-white font-medium px-5 py-3 rounded-lg hover:bg-[#6d28d9] transition focus:outline-none focus:ring-2 focus:ring-[#7c3aed] focus:ring-offset-2 focus:ring-offset-[#0a0a0f]">
-        Commencer mon diagnostic
+      <p class="text-[#c4b5fd] font-medium text-sm mb-6">9€ par diagnostic</p>
+      <a href="/register?type=standard" class="mt-auto inline-flex justify-center items-center text-center bg-[#7c3aed] text-white font-medium px-5 py-3 rounded-lg hover:bg-[#6d28d9] transition focus:outline-none focus:ring-2 focus:ring-[#7c3aed] focus:ring-offset-2 focus:ring-offset-[#0a0a0f]">
+        Commencer
       </a>
     </article>
 
+    {# — Entreprise — #}
     <article class="flex flex-col rounded-2xl border-2 border-[#a855f7] bg-[#12121a]/80 backdrop-blur-sm p-6 sm:p-7 shadow-[0_0_40px_rgba(168,85,247,0.12)]">
-      <div class="flex items-start gap-4 mb-4">
+      <div class="flex items-start gap-4 mb-3">
         <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#a855f7]/15 text-2xl" aria-hidden="true">🏢</span>
         <div class="text-left min-w-0">
-          <h3 class="text-lg font-semibold text-white leading-snug">
-            Je suis entrepreneur
-          </h3>
+          <h3 class="text-lg font-semibold text-white leading-snug">Entreprise</h3>
+          <p class="text-[#d8b4fe]/90 text-sm mt-0.5">Pour les entrepreneurs</p>
         </div>
       </div>
-      <p class="text-white/75 text-sm leading-relaxed flex-grow mb-6">
-        Tu as ta propre activité et tu veux identifier ce qui bloque ta croissance
+      <p class="text-white/75 text-sm leading-relaxed flex-grow mb-4">
+        Tu as ta propre activité. Identifie ce qui bloque ta croissance et comment avancer.
       </p>
-      <p class="text-[#d8b4fe] font-medium text-sm mb-6">
-        29€/mois - Diagnostics illimités
+      <p class="text-[#d8b4fe] font-medium text-sm mb-2">30€/mois — Diagnostics illimités</p>
+      <p class="text-xs font-medium text-[#e9d5ff] mb-6 inline-flex self-start rounded-md border border-[#a855f7]/50 bg-[#a855f7]/10 px-2.5 py-1">
+        Inclut accès revendeur
       </p>
       <a href="/register?type=entreprise" class="mt-auto inline-flex justify-center items-center text-center bg-[#a855f7] text-white font-medium px-5 py-3 rounded-lg hover:bg-[#9333ea] transition focus:outline-none focus:ring-2 focus:ring-[#a855f7] focus:ring-offset-2 focus:ring-offset-[#0a0a0f]">
-        Commencer mon diagnostic
+        Commencer
+      </a>
+    </article>
+
+    {# — Entreprise Premium — légèrement mis en avant #}
+    <article class="flex flex-col rounded-2xl border-2 border-[#f59e0b] bg-gradient-to-b from-[#1a1508]/90 to-[#12121a]/90 backdrop-blur-sm p-6 sm:p-7 shadow-[0_0_48px_rgba(245,158,11,0.22),0_0_0_1px_rgba(245,158,11,0.2)] ring-1 ring-amber-500/30 md:scale-[1.02] z-[1]">
+      <div class="flex items-start gap-4 mb-3">
+        <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-amber-500/20 text-2xl" aria-hidden="true">👑</span>
+        <div class="text-left min-w-0">
+          <h3 class="text-lg font-semibold text-white leading-snug">Entreprise Premium</h3>
+          <p class="text-amber-200/80 text-sm mt-0.5">Diagnostic approfondi</p>
+        </div>
+      </div>
+      <p class="text-white/80 text-sm leading-relaxed flex-grow mb-4">
+        Analyse complète avec options avancées. Pour les entreprises qui veulent aller au fond des choses.
+      </p>
+      <p class="text-amber-200 font-medium text-sm mb-2">90€/mois de base</p>
+      <p class="text-xs font-medium text-amber-100/90 mb-6 inline-flex self-start rounded-md border border-amber-500/45 bg-amber-500/10 px-2.5 py-1">
+        Options jusqu'à 270€/mois
+      </p>
+      <a href="/register?type=premium" class="mt-auto inline-flex justify-center items-center text-center bg-gradient-to-r from-amber-500 to-amber-600 text-white font-medium px-5 py-3 rounded-lg hover:from-amber-400 hover:to-amber-500 transition focus:outline-none focus:ring-2 focus:ring-amber-400 focus:ring-offset-2 focus:ring-offset-[#0a0a0f]">
+        Commencer
       </a>
     </article>
   </div>

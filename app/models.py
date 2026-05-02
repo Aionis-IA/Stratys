@@ -14,7 +14,7 @@ class User(Base):
     hashed_password = Column(String(255), nullable=False)
     is_active = Column(Boolean, default=True, nullable=False)
     is_subscribed = Column(Boolean, default=False, nullable=False)
-    user_type = Column(String(32), default="entreprise", nullable=False)
+    user_type = Column(String(32), default="standard", nullable=False)
     company_name = Column(String(255), default="", nullable=False)
     sector = Column(String(255), default="", nullable=False)
 

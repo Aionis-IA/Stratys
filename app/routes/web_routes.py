@@ -8,7 +8,7 @@ from fastapi.templating import Jinja2Templates
 from dotenv import load_dotenv
 from sqlalchemy.orm import Session
 
-from app.analyze import analyze_business, analyze_business_particulier
+from app.analyze import analyze_business, analyze_business_standard, analyze_premium
 from app.auth import (
     COOKIE_NAME,
     create_access_token,
@@ -30,9 +30,58 @@ BETA_COOKIE_NAME = "stratys_beta_code"
 
 
 def _dashboard_url(user: User) -> str:
-    if getattr(user, "user_type", None) == "particulier":
-        return "/dashboard/particulier"
+    user_type = (getattr(user, "user_type", None) or "").strip().lower()
+    if user_type == "standard":
+        return "/dashboard/standard"
+    if user_type == "premium":
+        return "/dashboard/premium"
     return "/dashboard/entreprise"
+
+
+def _register_offer_from_query(raw: str) -> str:
+    kind = (raw or "").strip().lower()
+    if kind == "standard":
+        return "standard"
+    if kind == "premium":
+        return "premium"
+    return "entreprise"
+
+
+def _user_type_from_register_offer(offer: str) -> str:
+    if offer == "standard":
+        return "standard"
+    if offer == "premium":
+        return "premium"
+    return "entreprise"
+
+
+def _register_offer_meta(offer: str) -> dict[str, str]:
+    if offer == "standard":
+        return {"label": "Standard — 9€ par diagnostic", "price": "9€ par diagnostic"}
+    if offer == "premium":
+        return {
+            "label": "Entreprise Premium — à partir de 90€/mois",
+            "price": "À partir de 90€/mois",
+        }
+    return {"label": "Entreprise — 30€/mois", "price": "30€/mois"}
+
+
+def _transition_price_for(target: str) -> str:
+    if target == "entreprise":
+        return "30€/mois"
+    if target == "premium":
+        return "à partir de 90€/mois"
+    return "9€ par diagnostic"
+
+
+def _can_change_type(current: str, target: str) -> bool:
+    if current == target:
+        return False
+    if current == "standard" and target in ("entreprise", "premium"):
+        return True
+    if current == "entreprise" and target == "premium":
+        return True
+    return False
 
 
 def _history_context(db: Session, user_id: int) -> dict:
@@ -62,6 +111,21 @@ def _form_last_int(form, key: str) -> Optional[int]:
         except (TypeError, ValueError):
             continue
     return None
+
+
+def _form_option_flag(form, *keys: str) -> bool:
+    """Champ 0/1 (hidden ou dernière valeur) : option activée si 1, on, true (vérifie plusieurs noms de champ)."""
+    for key in keys:
+        vals = form.getlist(key)
+        for v in reversed(vals or []):
+            s = str(v or "").strip().lower()
+            if s in ("1", "on", "true", "oui", "yes", "o"):
+                return True
+    return False
+
+
+def _debug_form_option_lists(form, keys: tuple[str, ...]) -> dict[str, list[str]]:
+    return {k: [str(x) for x in form.getlist(k)] for k in keys}
 
 
 @router.get("/", response_class=HTMLResponse)
@@ -97,12 +161,16 @@ def beta_access_submit(request: Request, beta_code: str = Form("")):
 
 @router.get("/register", response_class=HTMLResponse)
 def register_page(request: Request):
-    raw = (request.query_params.get("type") or "").strip().lower()
-    signup_type = raw if raw in ("particulier", "entreprise") else "entreprise"
+    offer_type = _register_offer_from_query(request.query_params.get("type") or "")
+    signup_type = _user_type_from_register_offer(offer_type)
     return templates.TemplateResponse(
         request=request,
         name="register.html",
-        context={"signup_type": signup_type},
+        context={
+            "signup_type": signup_type,
+            "offer_type": offer_type,
+            **_register_offer_meta(offer_type),
+        },
     )
 
 
@@ -117,8 +185,9 @@ def register_submit(
     db: Annotated[Session, Depends(get_db)] = None,
 ):
     ut = (user_type or "entreprise").strip().lower()
-    if ut not in ("particulier", "entreprise"):
+    if ut not in ("standard", "entreprise", "premium"):
         ut = "entreprise"
+    offer_type = ut
     cn = (company_name or "").strip()
     sec = (sector or "").strip()
     if db.query(User).filter(User.email == email).first():
@@ -128,8 +197,10 @@ def register_submit(
             context={
                 "error": "Un compte existe déjà avec cet email.",
                 "signup_type": ut,
-                "company_name": cn if ut == "entreprise" else "",
-                "sector": sec if ut == "entreprise" else "",
+                "offer_type": offer_type,
+                "company_name": cn if ut in ("entreprise", "premium") else "",
+                "sector": sec if ut in ("entreprise", "premium") else "",
+                **_register_offer_meta(offer_type),
             },
             status_code=400,
         )
@@ -138,7 +209,7 @@ def register_submit(
         "hashed_password": hash_password(password),
         "user_type": ut,
     }
-    if ut == "entreprise":
+    if ut in ("entreprise", "premium"):
         user_kw["company_name"] = cn
         user_kw["sector"] = sec
     else:
@@ -207,18 +278,35 @@ def dashboard_entreprise(
     )
 
 
-@router.get("/dashboard/particulier", response_class=HTMLResponse)
-def dashboard_particulier(
+@router.get("/dashboard/standard", response_class=HTMLResponse)
+def dashboard_standard(
     request: Request,
     user: Annotated[User, Depends(get_current_user_web)],
     db: Annotated[Session, Depends(get_db)],
 ):
-    if user.user_type != "particulier":
+    if user.user_type != "standard":
         return RedirectResponse(url=_dashboard_url(user), status_code=302)
     return templates.TemplateResponse(
         request=request,
-        name="dashboard_particulier.html",
+        name="dashboard_standard.html",
         context=_history_context(db, user.id),
+    )
+
+
+@router.get("/dashboard/premium", response_class=HTMLResponse)
+def dashboard_premium(
+    request: Request,
+    user: Annotated[User, Depends(get_current_user_web)],
+    db: Annotated[Session, Depends(get_db)],
+):
+    if user.user_type != "premium":
+        return RedirectResponse(url=_dashboard_url(user), status_code=302)
+    ctx = _history_context(db, user.id)
+    ctx["company_name"] = (getattr(user, "company_name", None) or "").strip()
+    return templates.TemplateResponse(
+        request=request,
+        name="dashboard_premium.html",
+        context=ctx,
     )
 
 
@@ -228,10 +316,16 @@ def analyze_get_redirect():
     return RedirectResponse(url="/dashboard", status_code=302)
 
 
-@router.get("/analyze/particulier")
-@router.get("/analyze/particulier/")
-def analyze_particulier_get_redirect():
-    return RedirectResponse(url="/dashboard/particulier", status_code=302)
+@router.get("/analyze/standard")
+@router.get("/analyze/standard/")
+def analyze_standard_get_redirect():
+    return RedirectResponse(url="/dashboard/standard", status_code=302)
+
+
+@router.get("/analyze/premium")
+@router.get("/analyze/premium/")
+def analyze_premium_get_redirect():
+    return RedirectResponse(url="/dashboard/premium", status_code=302)
 
 
 @router.post("/analyze")
@@ -287,20 +381,79 @@ async def analyze_submit(
     return RedirectResponse(url="/result", status_code=302)
 
 
-@router.post("/analyze/particulier")
-@router.post("/analyze/particulier/")
-def analyze_particulier_submit(
+@router.post("/analyze/premium")
+@router.post("/analyze/premium/")
+async def analyze_premium_submit(
+    request: Request,
+    current_user: Annotated[User, Depends(get_subscribed_user_web)],
+    db: Annotated[Session, Depends(get_db)],
+):
+    if current_user.user_type != "premium":
+        return RedirectResponse(url=_dashboard_url(current_user), status_code=302)
+    form = await request.form()
+    opt_debug = _debug_form_option_lists(
+        form,
+        ("opt_clarte", "opt_arch", "opt_pivot", "opt_roadmap", "option3", "option4"),
+    )
+    print("[Stratys DEBUG] POST /analyze/premium — options brutes (getlist):", opt_debug, flush=True)
+    situation = _form_last_nonempty_str(form, "situation")
+    user_offer = _form_last_nonempty_str(form, "user_offer")
+    top_challenges = _form_last_nonempty_str(form, "top_challenges")
+    resources = _form_last_nonempty_str(form, "resources")
+    goals_12m = _form_last_nonempty_str(form, "goals_12m")
+    if not situation or not user_offer or not top_challenges or not resources or not goals_12m:
+        raise HTTPException(status_code=422, detail="Champs obligatoires manquants.")
+    revenue = _form_last_int(form, "revenue")
+    if revenue is None:
+        raise HTTPException(status_code=422, detail="Revenu invalide ou manquant.")
+
+    pivot_sel = _form_option_flag(form, "opt_pivot", "option3")
+    roadmap_sel = _form_option_flag(form, "opt_roadmap", "option4")
+    print(
+        "[Stratys DEBUG] POST /analyze/premium — options résolues:",
+        {
+            "opt_clarte": _form_option_flag(form, "opt_clarte"),
+            "opt_arch": _form_option_flag(form, "opt_arch"),
+            "opt_pivot": pivot_sel,
+            "opt_roadmap": roadmap_sel,
+        },
+        flush=True,
+    )
+    data = {
+        "situation": situation,
+        "revenue": revenue,
+        "user_offer": user_offer,
+        "top_challenges": top_challenges,
+        "resources": resources,
+        "goals_12m": goals_12m,
+        "opt_clarte": "1" if _form_option_flag(form, "opt_clarte") else "0",
+        "opt_arch": "1" if _form_option_flag(form, "opt_arch") else "0",
+        "opt_pivot": "1" if pivot_sel else "0",
+        "opt_roadmap": "1" if roadmap_sel else "0",
+        "option3": "1" if pivot_sel else "0",
+        "option4": "1" if roadmap_sel else "0",
+    }
+    result = analyze_premium(data)
+    diag_id = save_diagnostic_history(db, current_user.id, "premium", result)
+    request.session["analyze_diag_id"] = diag_id
+    request.session["analyze_kind"] = "premium"
+    request.session.pop("analyze_result", None)
+    return RedirectResponse(url="/result", status_code=302)
+
+
+@router.post("/analyze/standard")
+@router.post("/analyze/standard/")
+def analyze_standard_submit(
     request: Request,
     situation: str = Form(...),
     net_salary: int = Form(...),
     ambition: str = Form(...),
     job_satisfaction: int = Form(...),
     main_blocker: str = Form(...),
-    passer_entrepreneur: Optional[str] = Form(None),
     current_user: Annotated[User, Depends(get_subscribed_user_web)] = None,
     db: Annotated[Session, Depends(get_db)] = None,
 ):
-    if current_user.user_type != "particulier":
+    if current_user.user_type != "standard":
         return RedirectResponse(url=_dashboard_url(current_user), status_code=302)
     data = {
         "situation": situation.strip(),
@@ -309,16 +462,52 @@ def analyze_particulier_submit(
         "job_satisfaction": job_satisfaction,
         "main_blocker": main_blocker.strip(),
     }
-    result = analyze_business_particulier(data)
-    diag_id = save_diagnostic_history(db, current_user.id, "particulier", result)
-    if passer_entrepreneur == "on":
-        u = db.query(User).filter(User.id == current_user.id).first()
-        if u:
-            u.user_type = "entreprise"
-            db.commit()
+    result = analyze_business_standard(data)
+    diag_id = save_diagnostic_history(db, current_user.id, "standard", result)
     request.session["analyze_diag_id"] = diag_id
-    request.session["analyze_kind"] = "particulier"
+    request.session["analyze_kind"] = "standard"
     request.session.pop("analyze_result", None)
+    return RedirectResponse(url="/result", status_code=302)
+
+
+@router.get("/account/change-type/confirm", response_class=HTMLResponse)
+def change_type_confirm_page(
+    request: Request,
+    target: str,
+    user: Annotated[User, Depends(get_current_user_web)],
+):
+    current = (user.user_type or "").strip().lower()
+    normalized_target = (target or "").strip().lower()
+    if not _can_change_type(current, normalized_target):
+        return RedirectResponse(url=_dashboard_url(user), status_code=302)
+    return templates.TemplateResponse(
+        request=request,
+        name="change_type_confirm.html",
+        context={
+            "current_type": current,
+            "target_type": normalized_target,
+            "target_price": _transition_price_for(normalized_target),
+        },
+    )
+
+
+@router.post("/account/change-type/confirm")
+def change_type_confirm_submit(
+    target: str = Form(...),
+    user: Annotated[User, Depends(get_current_user_web)] = None,
+    db: Annotated[Session, Depends(get_db)] = None,
+):
+    current = (user.user_type or "").strip().lower()
+    normalized_target = (target or "").strip().lower()
+    if not _can_change_type(current, normalized_target):
+        return RedirectResponse(url=_dashboard_url(user), status_code=302)
+    user.user_type = normalized_target
+    db.commit()
+    return RedirectResponse(url=_dashboard_url(user), status_code=302)
+
+
+@router.get("/result/premium", response_class=HTMLResponse)
+def result_premium_redirect():
     return RedirectResponse(url="/result", status_code=302)
 
 
@@ -352,9 +541,13 @@ def result(
         return RedirectResponse(url=_dashboard_url(current_user), status_code=302)
     kind = request.session.get("analyze_kind") or "entreprise"
     hist_ctx = _history_context(db, current_user.id)
+    _bs = result_data.get("blind_spots")
+    if not isinstance(_bs, list):
+        _bs = []
+    template_name = "result_premium.html" if kind == "premium" else "result.html"
     return templates.TemplateResponse(
         request=request,
-        name="result.html",
+        name=template_name,
         context={
             "analyze_kind": kind,
             "score": result_data.get("score", 0),
@@ -366,6 +559,21 @@ def result(
             "risque_principal": result_data.get("risque_principal", ""),
             "intention_lancement": result_data.get("intention_lancement", False),
             "etapes_lancement": result_data.get("etapes_lancement"),
+            "blind_spots": _bs,
+            "message_direct": str(result_data.get("message_direct", "") or ""),
+            "growth_potential": str(result_data.get("growth_potential", "") or ""),
+            "main_risk": str(result_data.get("main_risk", "") or ""),
+            "opt_clarte": bool(result_data.get("opt_clarte")),
+            "opt_arch": bool(result_data.get("opt_arch")),
+            "opt_pivot": bool(result_data.get("opt_pivot")),
+            "opt_roadmap": bool(result_data.get("opt_roadmap")),
+            "clarte_section": str(result_data.get("clarte_section", "") or ""),
+            "angles_morts": result_data.get("angles_morts")
+            if isinstance(result_data.get("angles_morts"), list)
+            else [],
+            "architecture_section": str(result_data.get("architecture_section", "") or ""),
+            "pivot_section": str(result_data.get("pivot_section", "") or ""),
+            "roadmap_section": str(result_data.get("roadmap_section", "") or ""),
             **hist_ctx,
         },
     )

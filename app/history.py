@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from app.issue_followup import (
     evaluate_previous_issues_resolution,
-    extract_three_issue_titles,
+    extract_issue_titles,
     titles_from_stored_issues,
 )
 from app.models import DiagnosticHistory
@@ -22,7 +22,8 @@ def save_diagnostic_history(
     issues = result.get("issues")
     if not isinstance(issues, list):
         issues = []
-    new_titles = extract_three_issue_titles(result)
+    axis_n = 5 if user_type_str == "premium" else 3
+    new_titles = extract_issue_titles(result, axis_n)
 
     prev = (
         db.query(DiagnosticHistory)
@@ -40,7 +41,7 @@ def save_diagnostic_history(
         weakness=str(result.get("weakness", "") or ""),
         issues=issues,
         issues_titles=new_titles,
-        issues_resolved=[False, False, False],
+        issues_resolved=[False] * axis_n,
         result_payload=copy.deepcopy(result),
     )
     db.add(new_entry)
@@ -50,18 +51,20 @@ def save_diagnostic_history(
     if prev is not None:
         prev_titles: list[str]
         raw_titles = prev.issues_titles
+        prev_kind = (getattr(prev, "user_type", None) or "").strip().lower()
+        prev_n = 5 if prev_kind == "premium" else 3
         if raw_titles is None or not isinstance(raw_titles, list):
-            prev_titles = titles_from_stored_issues(prev.issues)
+            prev_titles = titles_from_stored_issues(prev.issues, count=prev_n)
         else:
-            prev_titles = [str(t or "—").strip() or "—" for t in raw_titles[:3]]
-            while len(prev_titles) < 3:
+            prev_titles = [str(t or "—").strip() or "—" for t in raw_titles[:prev_n]]
+            while len(prev_titles) < prev_n:
                 prev_titles.append("—")
-            prev_titles = prev_titles[:3]
+            prev_titles = prev_titles[:prev_n]
 
         resolved = evaluate_previous_issues_resolution(
             prev_titles, result, user_type_str
         )
-        if resolved is not None and len(resolved) == 3:
+        if resolved is not None and len(resolved) == len(prev_titles):
             prev.issues_resolved = resolved
         if prev.issues_titles is None:
             prev.issues_titles = prev_titles
@@ -83,43 +86,46 @@ def last_diagnostics_for_user(db: Session, user_id: int, limit: int = 5):
 def format_history_for_template(rows: list) -> list[dict[str, Any]]:
     out: list[dict[str, Any]] = []
     for r in rows:
+        row_kind = (getattr(r, "user_type", None) or "").strip().lower()
+        count = 5 if row_kind == "premium" else 3
         raw_titles = r.issues_titles
         if raw_titles is None or not isinstance(raw_titles, list):
-            titles = titles_from_stored_issues(r.issues)
+            titles = titles_from_stored_issues(r.issues, count=count)
         else:
-            titles = [str(x or "—").strip() or "—" for x in raw_titles[:3]]
-            while len(titles) < 3:
+            titles = [str(x or "—").strip() or "—" for x in raw_titles[:count]]
+            while len(titles) < count:
                 titles.append("—")
-            titles = titles[:3]
+            titles = titles[:count]
 
         raw_res = r.issues_resolved
-        if not isinstance(raw_res, list) or len(raw_res) != 3:
-            resolved_flags = [False, False, False]
+        if not isinstance(raw_res, list) or len(raw_res) != count:
+            resolved_flags = [False] * count
         else:
             resolved_flags = []
-            for i in range(3):
+            for i in range(count):
                 v = raw_res[i] if i < len(raw_res) else False
                 resolved_flags.append(
                     v is True or str(v).lower() in ("true", "1", "oui")
                 )
 
         problems = [
-            {"title": titles[i], "resolved": resolved_flags[i]} for i in range(3)
+            {"title": titles[i], "resolved": resolved_flags[i]} for i in range(count)
         ]
 
         resolved_count = sum(1 for f in resolved_flags if f)
-        unresolved_titles = [titles[i] for i in range(3) if not resolved_flags[i]]
-        if resolved_count == 3:
+        unresolved_titles = [titles[i] for i in range(count) if not resolved_flags[i]]
+        n = count
+        if resolved_count == n:
             smart_message = (
                 "Excellent travail ! Tu as réglé tous tes blocages. "
                 "Fais un nouveau diagnostic pour identifier tes prochains défis."
             )
-        elif resolved_count == 2:
+        elif resolved_count == n - 1 and n > 1:
             u = unresolved_titles[0] if unresolved_titles else "—"
             smart_message = (
                 f"Bonne progression ! Il te reste un blocage prioritaire : {u}."
             )
-        elif resolved_count == 1:
+        elif resolved_count >= 1 and resolved_count < n:
             u = unresolved_titles[0] if unresolved_titles else "—"
             smart_message = (
                 f"Tu avances. Concentre-toi maintenant sur : {u}."

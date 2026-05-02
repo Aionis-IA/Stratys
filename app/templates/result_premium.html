@@ -1,0 +1,313 @@
+{% extends "base.html" %}
+{% block title %}Résultat Premium — Stratys{% endblock %}
+
+{# Blocs séparés par double saut de ligne → points numérotés (lisibilité document stratégique). #}
+{% macro premium_opt_points(raw_text, accent_border, accent_badge_bg, accent_badge_text, accent_badge_ring) %}
+{% if raw_text and raw_text.strip() %}
+<div class="space-y-3 sm:space-y-4">
+  {% for chunk in raw_text.split('\n\n') %}
+    {% set t = chunk.strip() %}
+    {% if t %}
+    <article class="flex gap-3 sm:gap-4 rounded-xl border {{ accent_border }} bg-black/30 px-4 py-4 sm:px-5 sm:py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+      <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg {{ accent_badge_bg }} {{ accent_badge_text }} text-sm font-bold tabular-nums ring-1 {{ accent_badge_ring }}" aria-hidden="true">{{ loop.index }}</span>
+      <p class="min-w-0 flex-1 text-[15px] leading-[1.68] tracking-[0.01em] text-white/[0.88] whitespace-pre-line max-w-prose">{{ t }}</p>
+    </article>
+    {% endif %}
+  {% endfor %}
+</div>
+{% endif %}
+{% endmacro %}
+
+{% block content %}
+<div class="grid grid-cols-1 lg:grid-cols-[65fr_35fr] gap-x-10 gap-y-8 items-start">
+  <div class="min-w-0 order-1">
+    <div class="flex flex-wrap items-center gap-2 mb-2">
+      <h1 class="text-2xl font-semibold text-white">Diagnostic Entreprise Premium</h1>
+      <span class="inline-flex items-center rounded-md border border-amber-500/50 bg-amber-500/10 px-2 py-0.5 text-xs font-bold text-amber-200 tracking-wider">PREMIUM</span>
+    </div>
+    <p class="text-amber-200/60 text-sm mb-6">5 axes prioritaires · angles morts · lecture cash & exécution</p>
+
+{% if summary %}
+<p class="text-white/90 text-base leading-relaxed mb-6 border-l-2 border-amber-500/55 pl-4">
+  {{ summary }}
+</p>
+{% endif %}
+
+<div class="grid gap-4 mb-8">
+  {% if growth_potential or potentiel_croissance %}
+  <div class="rounded-xl border border-emerald-500/45 bg-emerald-950/25 p-5">
+    <p class="text-emerald-400 font-semibold text-sm mb-2 flex items-center gap-2">
+      <span class="text-lg" aria-hidden="true">📈</span> Potentiel de croissance
+    </p>
+    <p class="text-white/90 text-sm leading-relaxed">{{ growth_potential or potentiel_croissance }}</p>
+  </div>
+  {% endif %}
+  {% if main_risk or risque_principal %}
+  <div class="rounded-xl border border-red-500/45 bg-red-950/25 p-5">
+    <p class="text-red-400 font-semibold text-sm mb-2 flex items-center gap-2">
+      <span class="text-lg" aria-hidden="true">⛔</span> Risque principal
+    </p>
+    <p class="text-white/90 text-sm leading-relaxed">{{ main_risk or risque_principal }}</p>
+  </div>
+  {% endif %}
+</div>
+
+{% if blind_spots and blind_spots|length > 0 %}
+<section class="mb-8 rounded-xl border-2 border-orange-500/50 bg-gradient-to-b from-orange-950/40 to-[#1a0f08]/80 p-5 shadow-[0_0_28px_rgba(234,88,12,0.12)]" aria-labelledby="blind-heading">
+  <h2 id="blind-heading" class="text-lg font-semibold text-orange-200 mb-4 flex items-center gap-2">
+    <span class="text-2xl" aria-hidden="true">⚠️</span> Angles morts
+  </h2>
+  <p class="text-white/50 text-sm mb-4">Deux endroits où tu te racontes une histoire sans le voir : titre + explication, sans t’épargner.</p>
+  <ul class="space-y-5">
+    {% for b in blind_spots %}
+    <li class="text-sm text-white/90 leading-relaxed">
+      <span class="shrink-0 w-6 h-6 inline-flex mr-2 align-top rounded bg-orange-500/20 border border-orange-500/40 items-center justify-center text-orange-300 text-xs font-bold">{{ loop.index }}</span>
+      {% if b is mapping %}
+      <div class="inline-block align-top max-w-[100%]">
+        <p class="font-semibold text-orange-200 mb-2">{{ b.title|default('') }}</p>
+        <p class="text-white/85 leading-relaxed whitespace-pre-line">{{ b.explanation|default('') }}</p>
+      </div>
+      {% else %}
+      <span>{{ b }}</span>
+      {% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+
+{% if strength or weakness %}
+<div
+  class="mb-8 rounded-lg border border-amber-500/30 bg-[#12121a]/90 p-5 drop-shadow-[0_0_20px_rgba(245,158,11,0.15)]"
+  style="box-shadow: 0 0 24px rgba(245, 158, 11, 0.12), 0 0 1px rgba(245, 158, 11, 0.4);"
+>
+  {% if strength %}
+  <p class="text-sm leading-relaxed mb-4 last:mb-0">
+    <span class="font-semibold text-[#22c55e]">💪 Force :</span>
+    <span class="text-white/90"> {{ strength }}</span>
+  </p>
+  {% endif %}
+  {% if weakness %}
+  <p class="text-sm leading-relaxed last:mb-0">
+    <span class="font-semibold text-[#f97316]">⚠️ Faiblesse :</span>
+    <span class="text-white/90"> {{ weakness }}</span>
+  </p>
+  {% endif %}
+</div>
+{% endif %}
+
+{% if message_direct %}
+<aside
+  class="mb-8 rounded-xl border-2 border-[#7c3aed]/60 bg-[#1a1028]/80 p-5 shadow-[0_0_24px_rgba(124,58,237,0.15)]"
+  aria-label="Vérité directe"
+>
+  <p class="text-white/50 text-xs font-medium uppercase tracking-wider mb-2">Ce qu’on ne te dit pas ailleurs</p>
+  <p class="text-white/95 text-base sm:text-lg leading-relaxed italic font-medium pl-1 border-l-2 border-[#a78bfa]/70">
+    {{ message_direct }}
+  </p>
+</aside>
+{% endif %}
+
+{% set s = score|int %}
+{% if s <= 40 %}
+  {% set gauge_color = '#ef4444' %}
+{% elif s <= 70 %}
+  {% set gauge_color = '#f97316' %}
+{% else %}
+  {% set gauge_color = '#22c55e' %}
+{% endif %}
+{% set radius = 54 %}
+{% set circumference = 2 * 3.141592653589793 * radius %}
+{% set dashoffset = circumference * (1 - s / 100.0) %}
+
+<div class="mb-10 flex flex-col items-center">
+  <p class="text-amber-200/70 text-sm mb-4 self-start w-full flex items-center gap-2">Score
+    <span class="text-[10px] font-bold uppercase tracking-widest text-amber-500/80 border border-amber-500/40 rounded px-1.5 py-0.5">Premium</span>
+  </p>
+  <div
+    class="relative inline-flex items-center justify-center drop-shadow-[0_0_18px_rgba(245,158,11,0.35)]"
+  >
+    <svg width="220" height="220" viewBox="0 0 220 220" aria-hidden="true" class="block">
+      <defs>
+        <filter id="stratysGaugeGlowPremium" x="-40%" y="-40%" width="180%" height="180%">
+          <feGaussianBlur in="SourceGraphic" stdDeviation="2.5" result="blur" />
+          <feMerge>
+            <feMergeNode in="blur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+      </defs>
+      <circle cx="110" cy="110" r="78" fill="#0a0a0f" stroke="rgba(245,158,11,0.28)" stroke-width="2" />
+      <circle
+        cx="110" cy="110" r="{{ radius }}"
+        fill="none"
+        stroke="#1f1f28"
+        stroke-width="14"
+      />
+      <circle
+        cx="110" cy="110" r="{{ radius }}"
+        fill="none"
+        stroke="{{ gauge_color }}"
+        stroke-width="14"
+        stroke-linecap="round"
+        stroke-dasharray="{{ circumference }}"
+        stroke-dashoffset="{{ dashoffset }}"
+        transform="rotate(-90 110 110)"
+        filter="url(#stratysGaugeGlowPremium)"
+      />
+    </svg>
+    <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+      <span class="text-5xl font-bold text-white tabular-nums">{{ s }}</span>
+      <span class="text-sm text-white/50 mt-0.5">/ 100</span>
+    </div>
+  </div>
+</div>
+
+{% if issues %}
+<section class="space-y-6">
+  <h2 class="text-lg font-medium text-white flex items-center gap-2">Les 5 axes prioritaires
+    <span class="text-xs font-normal text-amber-400/80">(Premium)</span>
+  </h2>
+  {% for issue in issues %}
+  <div class="bg-[#12121a]/90 border border-amber-500/20 rounded-lg p-4 shadow-[0_0_16px_rgba(0,0,0,0.2)]">
+    <div class="flex flex-wrap items-start gap-2 mb-2">
+      <span class="inline-flex shrink-0 items-center rounded px-2 py-0.5 text-xs font-semibold bg-gradient-to-r from-amber-600/90 to-amber-500/80 text-white border border-amber-400/30">
+        Axe {{ loop.index }} / 5
+      </span>
+      <h3 class="font-medium text-white flex-1 min-w-[12rem]">{{ issue.title }}</h3>
+    </div>
+    <p class="text-white/70 text-sm mb-2"><strong class="text-white/90">Impact :</strong> {{ issue.impact }}</p>
+    <div class="text-white/80 text-sm">
+      <strong class="text-amber-200/90">3 actions :</strong>
+      {% if issue.actions %}
+        <ol class="list-decimal list-inside mt-2 space-y-1">
+          {% for a in issue.actions %}
+            <li>{{ a }}</li>
+          {% endfor %}
+        </ol>
+      {% else %}
+        <p class="mt-2">{{ issue.action }}</p>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</section>
+{% endif %}
+
+{% if opt_clarte %}
+<section class="mb-10 rounded-2xl border border-violet-500/35 bg-gradient-to-br from-[#1a0d28]/95 via-[#12081c]/90 to-[#0a0610]/95 p-6 sm:p-8 shadow-[0_0_40px_rgba(139,92,246,0.08),inset_0_1px_0_rgba(255,255,255,0.04)] ring-1 ring-violet-500/20" aria-labelledby="opt-clarte-h">
+  <header class="flex flex-col gap-3 border-b border-violet-500/25 pb-5 mb-6">
+    <p class="text-[10px] font-semibold uppercase tracking-[0.2em] text-violet-400/70">Annexe stratégique · Option 1</p>
+    <div class="flex items-start gap-4">
+      <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-violet-500/15 text-2xl ring-1 ring-violet-400/35 shadow-[0_0_20px_rgba(139,92,246,0.15)]" aria-hidden="true">🔍</span>
+      <div class="min-w-0 pt-0.5">
+        <h2 id="opt-clarte-h" class="text-xl sm:text-[1.35rem] font-bold tracking-tight text-violet-100">Clarté &amp; angles morts</h2>
+        <p class="mt-1 text-sm text-violet-300/55 leading-snug max-w-prose">Décryptage veux / faits et angles non évidents — format court par bloc.</p>
+      </div>
+    </div>
+  </header>
+  {% if clarte_section %}
+    {{ premium_opt_points(clarte_section, 'border-violet-500/25', 'bg-violet-600/25', 'text-violet-100', 'ring-violet-400/40') }}
+  {% elif angles_morts and angles_morts|length > 0 %}
+    <div class="space-y-3 sm:space-y-4">
+      {% for a in angles_morts %}
+      <article class="flex gap-3 sm:gap-4 rounded-xl border border-violet-500/25 bg-black/30 px-4 py-4 sm:px-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-violet-600/25 text-violet-100 text-sm font-bold tabular-nums ring-1 ring-violet-400/40">{{ loop.index }}</span>
+        <div class="min-w-0 flex-1 max-w-prose">
+          {% if a is mapping %}
+          <p class="text-[15px] font-semibold text-violet-200 mb-2 leading-snug">{{ a.title|default('') }}</p>
+          <p class="text-[15px] leading-[1.68] text-white/[0.88] whitespace-pre-line">{{ a.explanation|default('') }}</p>
+          {% else %}
+          <p class="text-[15px] leading-[1.68] text-white/[0.88] whitespace-pre-line">{{ a }}</p>
+          {% endif %}
+        </div>
+      </article>
+      {% endfor %}
+    </div>
+  {% else %}
+  <p class="text-sm text-white/45 italic border border-dashed border-violet-500/25 rounded-xl px-4 py-6 text-center">Contenu en attente de génération.</p>
+  {% endif %}
+</section>
+{% endif %}
+
+{% if opt_arch %}
+<section class="mb-10 rounded-2xl border border-sky-500/35 bg-gradient-to-br from-[#0a1522]/95 via-[#060e18]/92 to-[#050812]/95 p-6 sm:p-8 shadow-[0_0_40px_rgba(14,165,233,0.08),inset_0_1px_0_rgba(255,255,255,0.04)] ring-1 ring-sky-500/20" aria-labelledby="opt-arch-h">
+  <header class="flex flex-col gap-3 border-b border-sky-500/25 pb-5 mb-6">
+    <p class="text-[10px] font-semibold uppercase tracking-[0.2em] text-sky-400/70">Annexe stratégique · Option 2</p>
+    <div class="flex items-start gap-4">
+      <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-sky-500/15 text-2xl ring-1 ring-sky-400/35 shadow-[0_0_20px_rgba(14,165,233,0.12)]" aria-hidden="true">⚙️</span>
+      <div class="min-w-0 pt-0.5">
+        <h2 id="opt-arch-h" class="text-xl sm:text-[1.35rem] font-bold tracking-tight text-sky-100">Architecture système</h2>
+        <p class="mt-1 text-sm text-sky-300/55 leading-snug max-w-prose">Flux, goulots et structure — un bloc par sous-partie.</p>
+      </div>
+    </div>
+  </header>
+  {% if architecture_section %}
+    {{ premium_opt_points(architecture_section, 'border-sky-500/25', 'bg-sky-600/25', 'text-sky-100', 'ring-sky-400/40') }}
+  {% else %}
+  <p class="text-sm text-white/45 italic border border-dashed border-sky-500/25 rounded-xl px-4 py-6 text-center">Contenu en attente de génération.</p>
+  {% endif %}
+</section>
+{% endif %}
+
+{% if opt_pivot %}
+<section class="mb-10 rounded-2xl border border-orange-500/40 bg-gradient-to-br from-[#1c1008]/95 via-[#140c06]/92 to-[#0a0604]/95 p-6 sm:p-8 shadow-[0_0_40px_rgba(249,115,22,0.1),inset_0_1px_0_rgba(255,255,255,0.04)] ring-1 ring-orange-500/25" aria-labelledby="opt-pivot-h">
+  <header class="flex flex-col gap-3 border-b border-orange-500/25 pb-5 mb-6">
+    <p class="text-[10px] font-semibold uppercase tracking-[0.2em] text-orange-400/70">Annexe stratégique · Option 3</p>
+    <div class="flex items-start gap-4">
+      <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-orange-500/15 text-2xl ring-1 ring-orange-400/35 shadow-[0_0_20px_rgba(249,115,22,0.12)]" aria-hidden="true">🔄</span>
+      <div class="min-w-0 pt-0.5">
+        <h2 id="opt-pivot-h" class="text-xl sm:text-[1.35rem] font-bold tracking-tight text-orange-100">Pivot stratégique</h2>
+        <p class="mt-1 text-sm text-orange-300/55 leading-snug max-w-prose">Décisions de coupure, cible et transition — une lecture par bloc.</p>
+      </div>
+    </div>
+  </header>
+  {% if pivot_section %}
+    {{ premium_opt_points(pivot_section, 'border-orange-500/30', 'bg-orange-600/25', 'text-orange-100', 'ring-orange-400/40') }}
+  {% else %}
+  <p class="text-sm text-white/45 italic border border-dashed border-orange-500/30 rounded-xl px-4 py-6 text-center">Contenu en attente de génération.</p>
+  {% endif %}
+</section>
+{% endif %}
+
+{% if opt_roadmap %}
+<section class="mb-10 rounded-2xl border border-amber-400/45 bg-gradient-to-br from-[#1a1408]/95 via-[#120e06]/92 to-[#080604]/95 p-6 sm:p-8 shadow-[0_0_40px_rgba(245,158,11,0.1),inset_0_1px_0_rgba(255,255,255,0.04)] ring-1 ring-amber-400/25" aria-labelledby="opt-roadmap-h">
+  <header class="flex flex-col gap-3 border-b border-amber-400/30 pb-5 mb-6">
+    <p class="text-[10px] font-semibold uppercase tracking-[0.2em] text-amber-400/75">Annexe stratégique · Option 4</p>
+    <div class="flex items-start gap-4">
+      <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-amber-500/15 text-2xl ring-1 ring-amber-400/40 shadow-[0_0_20px_rgba(245,158,11,0.14)]" aria-hidden="true">🗺️</span>
+      <div class="min-w-0 pt-0.5">
+        <h2 id="opt-roadmap-h" class="text-xl sm:text-[1.35rem] font-bold tracking-tight text-amber-100">Roadmap complète</h2>
+        <p class="mt-1 text-sm text-amber-300/55 leading-snug max-w-prose">12 mois — un mois ou un regroupement par carte numérotée.</p>
+      </div>
+    </div>
+  </header>
+  {% if roadmap_section %}
+    {{ premium_opt_points(roadmap_section, 'border-amber-500/30', 'bg-amber-600/20', 'text-amber-100', 'ring-amber-400/45') }}
+  {% else %}
+  <p class="text-sm text-white/45 italic border border-dashed border-amber-500/30 rounded-xl px-4 py-6 text-center">Contenu en attente de génération.</p>
+  {% endif %}
+</section>
+{% endif %}
+
+<p class="mt-8 text-white/60 text-sm">
+  <a href="/dashboard/premium" class="text-amber-400 hover:text-amber-300 underline underline-offset-2">Refaire un diagnostic</a>
+  <span class="text-white/40"> — </span>
+  <a href="/" class="text-amber-400 hover:text-amber-300 underline underline-offset-2">Accueil</a>
+</p>
+<div class="mt-6 flex justify-center">
+  <a
+    href="/dashboard/premium"
+    class="inline-block bg-gradient-to-r from-amber-600 to-amber-500 text-white font-semibold px-6 py-2.5 rounded-lg hover:from-amber-500 hover:to-amber-400 transition shadow-[0_0_18px_rgba(245,158,11,0.2)] focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 focus:ring-offset-[#0a0a0f]"
+  >
+    Refaire le diagnostic premium
+  </a>
+</div>
+  </div>
+  <div class="min-w-0 order-2 flex justify-center lg:px-4">
+    <div class="w-full max-w-[340px]">
+      {% include "_dashboard_history.html" %}
+    </div>
+  </div>
+</div>
+{% endblock %}
