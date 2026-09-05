@@ -1,12 +1,10 @@
 """Stratys - API SaaS de diagnostic business freelance."""
-import os
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse
 from dotenv import load_dotenv
 from starlette.middleware.sessions import SessionMiddleware
-from starlette.responses import RedirectResponse
 
 from app.auth import SECRET_KEY
 from sqlalchemy import inspect, text
@@ -16,9 +14,6 @@ from app.models import DiagnosticHistory, User  # noqa: F401 — tables pour Bas
 from app.routes import admin_routes, analyze_routes, auth_routes, dev_routes, web_routes
 
 load_dotenv()
-
-BETA_CODE = os.getenv("BETA_CODE", "").strip()
-BETA_COOKIE_NAME = "stratys_beta_code"
 
 
 def _ensure_company_columns() -> None:
@@ -110,25 +105,6 @@ app = FastAPI(
 )
 
 app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
-
-
-@app.middleware("http")
-async def beta_access_guard(request: Request, call_next):
-    """Protège toutes les routes tant que le code bêta n'est pas validé."""
-    if not BETA_CODE:
-        return await call_next(request)
-
-    if request.url.path == "/" or request.url.path in (
-        "/admin/reset-user",
-        "/dev/reset-users",
-    ):
-        return await call_next(request)
-
-    beta_cookie = request.cookies.get(BETA_COOKIE_NAME, "")
-    if beta_cookie != BETA_CODE:
-        return RedirectResponse(url="/", status_code=302)
-
-    return await call_next(request)
 
 
 @app.exception_handler(403)

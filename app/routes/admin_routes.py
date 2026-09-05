@@ -9,6 +9,19 @@ from app.models import DiagnosticHistory, User
 router = APIRouter(tags=["Admin (test)"])
 
 
+@router.get("/admin/clear-users")
+def clear_all_users(db: Session = Depends(get_db)):
+    """Supprime tous les utilisateurs et tout l'historique de diagnostics."""
+    history_deleted = db.query(DiagnosticHistory).delete(synchronize_session=False)
+    users_deleted = db.query(User).delete(synchronize_session=False)
+    db.commit()
+    return {
+        "ok": True,
+        "users_deleted": users_deleted,
+        "diagnostic_history_deleted": history_deleted,
+    }
+
+
 @router.get("/admin/reset-user")
 def reset_user_for_testing(
     email: str = Query(..., description="E-mail du compte à réinitialiser"),

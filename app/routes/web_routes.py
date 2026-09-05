@@ -1,11 +1,9 @@
 """Routes des pages web (templates Jinja2)."""
-import os
 from typing import Annotated, Optional
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
-from dotenv import load_dotenv
 from sqlalchemy.orm import Session
 
 from app.analyze import analyze_business, analyze_business_standard, analyze_premium
@@ -23,10 +21,6 @@ from app.models import DiagnosticHistory, User
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
-load_dotenv()
-
-BETA_CODE = os.getenv("BETA_CODE", "").strip()
-BETA_COOKIE_NAME = "stratys_beta_code"
 
 
 def _dashboard_url(user: User) -> str:
@@ -130,33 +124,7 @@ def _debug_form_option_lists(form, keys: tuple[str, ...]) -> dict[str, list[str]
 
 @router.get("/", response_class=HTMLResponse)
 def landing(request: Request):
-    beta_cookie = request.cookies.get(BETA_COOKIE_NAME, "")
-    if BETA_CODE and beta_cookie != BETA_CODE:
-        return templates.TemplateResponse(request=request, name="beta_access.html")
     return templates.TemplateResponse(request=request, name="landing.html")
-
-
-@router.post("/", response_class=HTMLResponse)
-def beta_access_submit(request: Request, beta_code: str = Form("")):
-    if not BETA_CODE:
-        return RedirectResponse(url="/", status_code=302)
-
-    if beta_code.strip() != BETA_CODE:
-        return templates.TemplateResponse(
-            request=request,
-            name="beta_access.html",
-            context={"error": "Code invalide. Veuillez réessayer."},
-            status_code=401,
-        )
-
-    response = RedirectResponse(url="/", status_code=302)
-    response.set_cookie(
-        key=BETA_COOKIE_NAME,
-        value=BETA_CODE,
-        httponly=True,
-        samesite="lax",
-    )
-    return response
 
 
 @router.get("/register", response_class=HTMLResponse)
