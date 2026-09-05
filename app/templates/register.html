@@ -14,7 +14,6 @@
     <label for="password" class="block text-sm text-white/70 mb-1">Mot de passe</label>
     <input type="password" id="password" name="password" required class="w-full bg-[#12121a]/90 border border-white/10 rounded px-3 py-2 text-white placeholder:text-white/35 focus:outline-none focus:border-[#7c3aed] focus:ring-1 focus:ring-[#7c3aed]">
   </div>
-  {% if signup_type in ('entreprise', 'premium') %}
   <div>
     <label for="company_name" class="block text-sm text-white/70 mb-1">Nom de votre entreprise</label>
     <input type="text" id="company_name" name="company_name" value="{{ company_name | default('') }}" class="w-full bg-[#12121a]/90 border border-white/10 rounded px-3 py-2 text-white placeholder:text-white/35 focus:outline-none focus:border-[#7c3aed] focus:ring-1 focus:ring-[#7c3aed]">
@@ -23,7 +22,6 @@
     <label for="sector" class="block text-sm text-white/70 mb-1">Secteur d'activité</label>
     <input type="text" id="sector" name="sector" value="{{ sector | default('') }}" class="w-full bg-[#12121a]/90 border border-white/10 rounded px-3 py-2 text-white placeholder:text-white/35 focus:outline-none focus:border-[#7c3aed] focus:ring-1 focus:ring-[#7c3aed]">
   </div>
-  {% endif %}
   <button type="submit" class="bg-[#7c3aed] text-white font-medium px-6 py-2 rounded hover:bg-[#6d28d9] transition focus:outline-none focus:ring-2 focus:ring-[#7c3aed] focus:ring-offset-2 focus:ring-offset-[#0a0a0f]">
     S'inscrire
   </button>

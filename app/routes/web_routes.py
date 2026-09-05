@@ -6,7 +6,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
-from app.analyze import analyze_business, analyze_business_standard, analyze_premium
+from app.analyze import analyze_business, analyze_premium
 from app.auth import (
     COOKIE_NAME,
     create_access_token,
@@ -25,8 +25,6 @@ templates = Jinja2Templates(directory="app/templates")
 
 def _dashboard_url(user: User) -> str:
     user_type = (getattr(user, "user_type", None) or "").strip().lower()
-    if user_type == "standard":
-        return "/dashboard/standard"
     if user_type == "premium":
         return "/dashboard/premium"
     return "/dashboard/entreprise"
@@ -34,24 +32,18 @@ def _dashboard_url(user: User) -> str:
 
 def _register_offer_from_query(raw: str) -> str:
     kind = (raw or "").strip().lower()
-    if kind == "standard":
-        return "standard"
     if kind == "premium":
         return "premium"
     return "entreprise"
 
 
 def _user_type_from_register_offer(offer: str) -> str:
-    if offer == "standard":
-        return "standard"
     if offer == "premium":
         return "premium"
     return "entreprise"
 
 
 def _register_offer_meta(offer: str) -> dict[str, str]:
-    if offer == "standard":
-        return {"label": "Standard — 9€ par diagnostic", "price": "9€ par diagnostic"}
     if offer == "premium":
         return {
             "label": "Entreprise Premium — à partir de 90€/mois",
@@ -61,18 +53,14 @@ def _register_offer_meta(offer: str) -> dict[str, str]:
 
 
 def _transition_price_for(target: str) -> str:
-    if target == "entreprise":
-        return "30€/mois"
     if target == "premium":
         return "à partir de 90€/mois"
-    return "9€ par diagnostic"
+    return "30€/mois"
 
 
 def _can_change_type(current: str, target: str) -> bool:
     if current == target:
         return False
-    if current == "standard" and target in ("entreprise", "premium"):
-        return True
     if current == "entreprise" and target == "premium":
         return True
     return False
@@ -153,7 +141,7 @@ def register_submit(
     db: Annotated[Session, Depends(get_db)] = None,
 ):
     ut = (user_type or "entreprise").strip().lower()
-    if ut not in ("standard", "entreprise", "premium"):
+    if ut not in ("entreprise", "premium"):
         ut = "entreprise"
     offer_type = ut
     cn = (company_name or "").strip()
@@ -166,24 +154,19 @@ def register_submit(
                 "error": "Un compte existe déjà avec cet email.",
                 "signup_type": ut,
                 "offer_type": offer_type,
-                "company_name": cn if ut in ("entreprise", "premium") else "",
-                "sector": sec if ut in ("entreprise", "premium") else "",
+                "company_name": cn,
+                "sector": sec,
                 **_register_offer_meta(offer_type),
             },
             status_code=400,
         )
-    user_kw: dict = {
-        "email": email,
-        "hashed_password": hash_password(password),
-        "user_type": ut,
-    }
-    if ut in ("entreprise", "premium"):
-        user_kw["company_name"] = cn
-        user_kw["sector"] = sec
-    else:
-        user_kw["company_name"] = ""
-        user_kw["sector"] = ""
-    user = User(**user_kw)
+    user = User(
+        email=email,
+        hashed_password=hash_password(password),
+        user_type=ut,
+        company_name=cn,
+        sector=sec,
+    )
     db.add(user)
     db.commit()
     return RedirectResponse(url="/login", status_code=302)
@@ -246,21 +229,6 @@ def dashboard_entreprise(
     )
 
 
-@router.get("/dashboard/standard", response_class=HTMLResponse)
-def dashboard_standard(
-    request: Request,
-    user: Annotated[User, Depends(get_current_user_web)],
-    db: Annotated[Session, Depends(get_db)],
-):
-    if user.user_type != "standard":
-        return RedirectResponse(url=_dashboard_url(user), status_code=302)
-    return templates.TemplateResponse(
-        request=request,
-        name="dashboard_standard.html",
-        context=_history_context(db, user.id),
-    )
-
-
 @router.get("/dashboard/premium", response_class=HTMLResponse)
 def dashboard_premium(
     request: Request,
@@ -282,12 +250,6 @@ def dashboard_premium(
 @router.get("/analyze/")
 def analyze_get_redirect():
     return RedirectResponse(url="/dashboard", status_code=302)
-
-
-@router.get("/analyze/standard")
-@router.get("/analyze/standard/")
-def analyze_standard_get_redirect():
-    return RedirectResponse(url="/dashboard/standard", status_code=302)
 
 
 @router.get("/analyze/premium")
@@ -405,35 +367,6 @@ async def analyze_premium_submit(
     diag_id = save_diagnostic_history(db, current_user.id, "premium", result)
     request.session["analyze_diag_id"] = diag_id
     request.session["analyze_kind"] = "premium"
-    request.session.pop("analyze_result", None)
-    return RedirectResponse(url="/result", status_code=302)
-
-
-@router.post("/analyze/standard")
-@router.post("/analyze/standard/")
-def analyze_standard_submit(
-    request: Request,
-    situation: str = Form(...),
-    net_salary: int = Form(...),
-    ambition: str = Form(...),
-    job_satisfaction: int = Form(...),
-    main_blocker: str = Form(...),
-    current_user: Annotated[User, Depends(get_subscribed_user_web)] = None,
-    db: Annotated[Session, Depends(get_db)] = None,
-):
-    if current_user.user_type != "standard":
-        return RedirectResponse(url=_dashboard_url(current_user), status_code=302)
-    data = {
-        "situation": situation.strip(),
-        "net_salary": net_salary,
-        "ambition": ambition.strip(),
-        "job_satisfaction": job_satisfaction,
-        "main_blocker": main_blocker.strip(),
-    }
-    result = analyze_business_standard(data)
-    diag_id = save_diagnostic_history(db, current_user.id, "standard", result)
-    request.session["analyze_diag_id"] = diag_id
-    request.session["analyze_kind"] = "standard"
     request.session.pop("analyze_result", None)
     return RedirectResponse(url="/result", status_code=302)
 

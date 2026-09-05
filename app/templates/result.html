@@ -28,20 +28,6 @@
 </div>
 {% endif %}
 
-{% if analyze_kind == 'standard' and intention_lancement and etapes_lancement %}
-<section class="mb-8 rounded-xl border-2 border-[#a855f7]/45 bg-[#1a0a2e]/50 p-6 shadow-[0_0_32px_rgba(168,85,247,0.12)]" aria-labelledby="lancement-heading">
-  <h2 id="lancement-heading" class="text-lg font-semibold text-white mb-4">Tu veux te lancer ?</h2>
-  <ol class="list-decimal list-inside space-y-3 text-white/90 text-sm mb-6 leading-relaxed">
-    {% for etape in etapes_lancement %}
-    <li class="marker:text-[#c4b5fd]">{{ etape }}</li>
-    {% endfor %}
-  </ol>
-  <p class="text-white/75 text-sm border-t border-white/10 pt-4 leading-relaxed">
-    Si tu franchis le pas, ton diagnostic devient celui d'un entrepreneur. Reviens sur Stratys avec ton profil Entrepreneur.
-  </p>
-</section>
-{% endif %}
-
 {% if strength or weakness %}
 <div
   class="mb-8 rounded-lg border border-white/10 bg-[#12121a]/90 p-5 drop-shadow-[0_0_20px_rgba(124,58,237,0.4)]"

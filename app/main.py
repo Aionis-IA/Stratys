@@ -46,26 +46,28 @@ def _ensure_user_type_column() -> None:
     with engine.begin() as conn:
         conn.execute(
             text(
-                "ALTER TABLE users ADD COLUMN user_type VARCHAR(32) NOT NULL DEFAULT 'standard'"
+                "ALTER TABLE users ADD COLUMN user_type VARCHAR(32) NOT NULL DEFAULT 'entreprise'"
             )
         )
 
 
 def _normalize_user_type_values() -> None:
-    """Normalise les anciennes valeurs user_type ('particulier' -> 'standard')."""
+    """Normalise les anciennes valeurs user_type (particulier/standard -> entreprise)."""
     insp = inspect(engine)
     table_names = set(insp.get_table_names())
     with engine.begin() as conn:
         if "users" in table_names:
             conn.execute(
                 text(
-                    "UPDATE users SET user_type='standard' WHERE lower(coalesce(user_type,''))='particulier'"
+                    "UPDATE users SET user_type='entreprise' WHERE lower(coalesce(user_type,'')) "
+                    "IN ('particulier', 'standard')"
                 )
             )
         if "diagnostic_history" in table_names:
             conn.execute(
                 text(
-                    "UPDATE diagnostic_history SET user_type='standard' WHERE lower(coalesce(user_type,''))='particulier'"
+                    "UPDATE diagnostic_history SET user_type='entreprise' WHERE lower(coalesce(user_type,'')) "
+                    "IN ('particulier', 'standard')"
                 )
             )
 
@@ -111,7 +113,7 @@ app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
 async def forbidden_page(request: Request, exc):
     """Affiche une page simple pour les 403 (ex. abonnement requis)."""
     path = request.url.path.rstrip("/") or "/"
-    if path in ("/analyze", "/analyze/standard", "/analyze/premium") or "diagnostic" in (
+    if path in ("/analyze", "/analyze/premium") or "diagnostic" in (
         getattr(exc, "detail", "") or ""
     ):
         return HTMLResponse(

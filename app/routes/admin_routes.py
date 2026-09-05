@@ -28,7 +28,7 @@ def reset_user_for_testing(
     db: Session = Depends(get_db),
 ):
     """
-    Supprime tout l'historique de diagnostics de l'utilisateur et remet user_type à « standard ».
+    Supprime tout l'historique de diagnostics de l'utilisateur et remet user_type à « entreprise ».
     Le compte (mot de passe, etc.) est conservé.
     """
     normalized = (email or "").strip()
@@ -44,7 +44,7 @@ def reset_user_for_testing(
         .filter(DiagnosticHistory.user_id == user.id)
         .delete(synchronize_session=False)
     )
-    user.user_type = "standard"
+    user.user_type = "entreprise"
     db.commit()
 
     return {

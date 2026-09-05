@@ -13,7 +13,7 @@ load_dotenv()
 
 
 def extract_issue_titles(result: dict[str, Any], count: int) -> list[str]:
-    """Extrait count titres d’axes depuis le résultat d’analyse (3 = standard/entreprise, 5 = premium)."""
+    """Extrait count titres d’axes depuis le résultat d’analyse (3 = entreprise, 5 = premium)."""
     issues = result.get("issues")
     if not isinstance(issues, list):
         issues = []
@@ -42,11 +42,7 @@ def _new_diagnostic_text_block(new_result: dict[str, Any], user_type: str) -> st
         for it in issues[:n_axes]:
             if isinstance(it, dict):
                 new_titles.append(str(it.get("title", "") or "").strip())
-    kind = (
-        "entrepreneur / activité"
-        if user_type in ("entreprise", "premium")
-        else "salarié / carrière"
-    )
+    kind = "entrepreneur / activité"
     _bs = new_result.get("blind_spots", "")
     if isinstance(_bs, list):
         parts: list[str] = []
