@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Stratys — Accès bêta{% endblock %}
+{% block content %}
+<section class="max-w-md mx-auto">
+  <div class="bg-white/[0.04] border border-[#7c3aed]/30 rounded-2xl p-6 sm:p-8 shadow-[0_0_45px_rgba(124,58,237,0.2)]">
+    <h1 class="text-2xl font-semibold text-white mb-2 text-center">
+      Accès bêta privé
+    </h1>
+    <p class="text-white/70 text-sm text-center mb-6">
+      Entrez votre code d’accès pour continuer sur Stratys.
+    </p>
+
+    {% if error %}
+      <div class="mb-4 rounded-lg border border-red-400/40 bg-red-500/10 px-3 py-2 text-sm text-red-200">
+        {{ error }}
+      </div>
+    {% endif %}
+
+    <form method="post" action="/" class="space-y-4">
+      <div>
+        <label for="beta_code" class="block text-sm text-white/80 mb-2">Code bêta</label>
+        <input
+          id="beta_code"
+          name="beta_code"
+          type="password"
+          required
+          autocomplete="off"
+          class="w-full rounded-lg bg-[#160a2f] border border-[#7c3aed]/40 text-white px-4 py-2.5 outline-none focus:ring-2 focus:ring-[#a855f7]"
+          placeholder="••••••••"
+        />
+      </div>
+      <button
+        type="submit"
+        class="w-full bg-[#7c3aed] text-white font-medium px-4 py-2.5 rounded-lg hover:bg-[#6d28d9] transition focus:outline-none focus:ring-2 focus:ring-[#a855f7] focus:ring-offset-2 focus:ring-offset-[#0a0a0f]"
+      >
+        Entrer
+      </button>
+    </form>
+  </div>
+</section>
+{% endblock %}
